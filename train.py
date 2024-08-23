@@ -99,7 +99,7 @@ class MathSymbolDataset(Dataset):
 
         return image, label
     
-
+    
 transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
     transforms.ToTensor(),
@@ -130,14 +130,14 @@ class LeNet5V1(nn.Module):
         super().__init__()
         self.feature = nn.Sequential(
             #1
-            nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=2),   # 28*28->32*32-->28*28
+            nn.Conv2d(in_channels=1, out_channels=6, kernel_size=5, stride=1, padding=2),   
             nn.Tanh(),  
-            nn.AvgPool2d(kernel_size=2, stride=2),  # 22*22
+            nn.AvgPool2d(kernel_size=2, stride=2),  
             
             #2
-            nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5, stride=1),  # 10*10
+            nn.Conv2d(in_channels=6, out_channels=16, kernel_size=5, stride=1),  
             nn.Tanh(),
-            nn.AvgPool2d(kernel_size=2, stride=2),  # 5*5
+            nn.AvgPool2d(kernel_size=2, stride=2),  
             
         )
         self.classifier = nn.Sequential(
@@ -151,28 +151,58 @@ class LeNet5V1(nn.Module):
         
     def forward(self, x):
         return self.classifier(self.feature(x))
+    
+
+class SimpleYOLO(nn.Module):
+    def __init__(self):
+        super(SimpleYOLO, self).__init__()
+        self.conv1 = nn.Conv2d(1, 32, 3, 1, padding=1)
+        self.conv2 = nn.Conv2d(32, 64, 3, 1, padding=1)
+        self.conv3 = nn.Conv2d(64, 128, 3, 1, padding=1)
+        self.pool = nn.MaxPool2d(2, 2)
+        self.batch_norm1 = nn.BatchNorm2d(32)
+        self.batch_norm2 = nn.BatchNorm2d(64)
+        self.batch_norm3 = nn.BatchNorm2d(128)
+
+        self.fc1 = nn.Linear(128 * 5 * 5, 512)
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 81) 
+        self.dropout = nn.Dropout(0.5)
+        self.leaky_relu = nn.LeakyReLU(0.1)
+
+    def forward(self, x):
+        x = self.pool(self.leaky_relu(self.batch_norm1(self.conv1(x))))
+        x = self.pool(self.leaky_relu(self.batch_norm2(self.conv2(x))))
+        x = self.pool(self.leaky_relu(self.batch_norm3(self.conv3(x))))
+        x = x.view(x.size(0), -1)
+        x = self.leaky_relu(self.fc1(x))
+        x = self.dropout(x)
+        x = self.leaky_relu(self.fc2(x))
+        x = self.dropout(x)
+        x = self.fc3(x)
+        return x
 
 
-model = LeNet5V1()
+
+model = SimpleYOLO()
 criterion = nn.CrossEntropyLoss() # loss function
 optimizer = optim.Adam(model.parameters(), lr=0.001)
-accuracy = Accuracy(task='multiclass', num_classes=10)
-
+accuracy = Accuracy(task='multiclass', num_classes=81)
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 accuracy = accuracy.to(device)
 model = model.to(device)
 
-  
+
 # ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
 
 num_epochs = 5
-train_losses, val_losses = [], []
+train_losses, val_losses, train_accs, val_accs = [], [], [], []
 
 for epoch in range(num_epochs):
     model.train()
-    running_loss = 0.0
+    running_acc, running_loss = 0.0, 0.0
     for images, labels in tqdm(train_loader, desc="training loop"):
         optimizer.zero_grad()
         outputs = model(images)
@@ -180,6 +210,10 @@ for epoch in range(num_epochs):
         loss.backward()
         optimizer.step()
         running_loss += loss.item() * images.size(0)
+        running_acc += accuracy(outputs, labels)
+
+    train_acc = running_acc / len(train_loader.dataset)
+    train_accs.append(train_acc)
     train_loss = running_loss / len(train_loader.dataset)
     train_losses.append(train_loss)
 

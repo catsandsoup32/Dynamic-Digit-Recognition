@@ -15,6 +15,7 @@ class Paint(object):
 
     def __init__(self):
         self.root = Tk()
+        self.root.geometry("600x600")  
         self.root.title("Paint Window")
         self.window_title = "Paint Window"
 
@@ -59,6 +60,7 @@ class Paint(object):
         self.c.bind('<ButtonRelease-1>', self.reset)
 
         self.objects = []
+        self.screenshot_img = None
 
     def use_pen(self):
         self.activate_button(self.pen_button)
@@ -119,29 +121,40 @@ class Paint(object):
         self.root.destroy()
 
     def predict(self):
+        # Hide the button grid
+        self.pen_button.grid_forget()
+        self.eraser_button.grid_forget()
+        self.clear_button.grid_forget()
+        self.predict_button.grid_forget()
+        self.choose_size_button.grid_forget()
+
+
         self.root.update()  # Force update
         self.root.update_idletasks()  # Ensure all events are processed
         # Get the window by its title
-        window = gw.getWindowsWithTitle(self.window_title)[0]
-        if not window:
-            raise ValueError(f"No window with title '{self.window_title}' found.")
-        
+
         left = self.root.winfo_rootx()
-        top = self.root.winfo_rooty()
-        right = left + self.root.winfo_width()
-        bottom = top + self.root.winfo_height()
+        top = self.root.winfo_rooty() 
+        width = self.root.winfo_width()
+        height = self.root.winfo_height() 
 
-        bbox = (left, top, right, bottom)
+        bbox = (left, top, width, height)
         print(bbox)
-
-        # Capture the area of the screen where the window is located
         img = pyautogui.screenshot(region=bbox)
+        self.screenshot_img = img
+
+        # Show the button grid again
+        self.pen_button.grid(row=0, column=0)
+        self.eraser_button.grid(row=0, column=3)
+        self.clear_button.grid(row=0, column=2)
+        self.predict_button.grid(row=0, column=1)
+        self.choose_size_button.grid(row=0, column=4)
 
         plt.imshow(img)
         plt.axis('off') 
         plt.show()
-       
-
+        
+    
 if __name__ == '__main__':
     # paint_app = Paint()
     pass
