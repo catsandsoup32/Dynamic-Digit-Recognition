@@ -15,6 +15,8 @@ from sklearn.model_selection import train_test_split
 import os
 from PIL import Image
 
+
+
 # transform and init data
 from dataloader import MathSymbolDataset
 
@@ -34,6 +36,10 @@ train_loader = DataLoader(new_train_dataset, batch_size=32, shuffle=True) # not 
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
 test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
+for test_im, test_label in train_loader:
+    # torch.set_printoptions(threshold=torch.inf)
+    # print(test_im)
+    break
 
 # About 270,000 elements in new_train_dataset
 # Each element is a length two tuple containing 1: a 1x45x45 tensor and 2: the label number
@@ -87,10 +93,13 @@ model = model.to(device)
 
 # ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
-def main(num_epochs, experimentNum):
+def main(num_epochs, experimentNum, loadFromSaved):
     num_epochs = num_epochs
     train_losses, val_losses, train_accs, val_accs = [], [], [], []
 
+    if loadFromSaved is not None:
+        model.load_state_dict(torch.load(loadFromSaved, map_location=device, weights_only=True))
+    
     for epoch in range(num_epochs):
         model.train()
         running_acc, running_loss = 0.0, 0.0
@@ -130,7 +139,11 @@ def main(num_epochs, experimentNum):
 
         print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss} train acc: {train_acc}, val loss: {val_loss}, val acc: {val_acc}")
 
-    torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}.pt')  # Save the trained model
+        if num_epochs % 10 == 0:
+            torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch}.pt')  # Save the trained model
 
 if __name__ == '__main__':
-    main(num_epochs=15, experimentNum=1)
+    main(num_epochs=15, experimentNum=2, loadFromSaved='save_states/CNNmodel1.pt')
+
+# Experiment 1: Test, loss at around 0.3, did not print accuracy
+# Experiment 2: 

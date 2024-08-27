@@ -14,28 +14,26 @@ import torch
 import torch.nn as nn
 import torchvision
 import torchvision.transforms.functional as TF
-# from yolo.mnist_train_simple_yolo import SimpleYOLO, transform
-import torch.nn.functional as F
+
+from train import transform
+from train import CNN
+from dataloader import class_Labels_Length
 
 class Paint(object):
 
     DEFAULT_PEN_SIZE = 5.0
     DEFAULT_COLOR = 'black'
 
-    def __init__(self):
+    def __init__(self, model, model_folder, transform):
         self.root = Tk()
-        self.root.geometry("600x600")  
         self.root.title("Paint Window")
         self.window_title = "Paint Window"
+        self.model = model
+        self.model_folder = model_folder
+        self.transform = transform
 
         self.pen_button = Button(self.root, text='pen', command=self.use_pen)
         self.pen_button.grid(row=0, column=0)
-
-        #self.brush_button = Button(self.root, text='brush', command=self.use_brush)
-        #self.brush_button.grid(row=0, column=1)
-
-        #self.color_button = Button(self.root, text='color', command=self.choose_color)
-        #self.color_button.grid(row=0, column=2)
 
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
         self.eraser_button.grid(row=0, column=3)
@@ -49,7 +47,7 @@ class Paint(object):
         self.choose_size_button = Scale(self.root, from_=1, to=10, orient=HORIZONTAL)
         self.choose_size_button.grid(row=0, column=4)
 
-        self.c = Canvas(self.root, bg='white', width=600, height=600)
+        self.c = Canvas(self.root, bg='white', width=1000, height=1000)
         self.c.grid(row=1, columnspan=5)
 
         self.setup()
@@ -73,9 +71,6 @@ class Paint(object):
 
     def use_pen(self):
         self.activate_button(self.pen_button)
-
-    #def use_brush(self):
-        #self.activate_button(self.brush_button)
 
     def choose_color(self):
         self.eraser_on = False
@@ -163,41 +158,46 @@ class Paint(object):
         self.run_inference()
 
     def run_inference(self):
-        # model = SimpleYOLO()
-        #model.load_state_dict(torch.load('models/cnn_deep_model.pth', weights_only=True))
-        #model.eval()
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = self.model
+        model.load_state_dict(torch.load(self.model_folder, map_location=device, weights_only=True))
+        model.eval()
 
-        ss_img = self.screenshot_img 
-        inverted_image = PIL.ImageOps.invert(ss_img) if ss_img is not None else print("ss_img has type None")
-        #input_tensor = transform(inverted_image) if inverted_image is not None else print("input_tensor is None")
+        ss_img = self.screenshot_img.resize((45,45))
+        input_tensor = self.transform(ss_img)
 
         if isinstance(input_tensor, torch.Tensor):   
-            input_tensor = input_tensor * 3.0 # brighten gray values
-
+            input_tensor = input_tensor 
             showIm = np.squeeze(input_tensor.numpy()) 
-            plt.imshow(showIm, cmap='Grays')
+            plt.imshow(showIm, cmap='viridis')
             plt.show() 
 
             input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
-            print(input_tensor)
-            
-        '''  
+            print(f"Image tensor: {input_tensor}")
+            input_tensor = input_tensor.to(device)
+         
         with torch.no_grad():
-            output = model(input_tensor)
+            output = model(input_tensor)    
         
         output = output.squeeze(0)  # Remove batch dimension
-        print(output.shape)
-        predictions = list(output)
-         predictions = output[4:len(output)]
-        classes = [0,1,2,3,4,5,6,7,8,9]
+        print(f"Amount of predictions: {output.shape}")
+        predictions = list(output)  
 
-        bb_values = output[0:4]
-
+        labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
+        classes = labels_df['Class_Names'].tolist()
+        
+        max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
+        max_class_name = classes[max_index]
+        
         plt.clf()
-        plt.bar(classes, predictions*100, color = 'skyblue')
+        plt.bar(classes, predictions, color = 'skyblue')
+        plt.annotate(f'Highest: {max_class_name}',
+             xy=(max_index, predictions[max_index]),
+             xytext=(max_index, predictions[max_index] + 0.1),
+             arrowprops=dict(facecolor='red', edgecolor='black', arrowstyle='->', lw=1.5))
         plt.show()
-        '''
+        
     
 if __name__ == '__main__':
-    paint_app = Paint()
+    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel1.pt', transform=transform)
     

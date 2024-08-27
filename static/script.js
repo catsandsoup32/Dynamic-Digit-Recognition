@@ -1,4 +1,6 @@
 
+// CANVAS APP
+
 const canvas = document.getElementById('myCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -32,16 +34,17 @@ canvas.addEventListener('mouseup', () => {
 
 // -------------------------------------------
 // Event listeners
-document.getElementById('clear').addEventListener('click', clearScreen);
-
-
-// -------------------------------------------
-// Functions
-
+document.getElementById('clear-button').addEventListener('click', clearScreen);
 function clearScreen(){
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
+document.getElementById('eraser-button').addEventListener('click', eraser);
+function eraser(){
+    
+}
+// ---------------------------------------------------------------------------
+// Screenshot and inference
 
 
 
