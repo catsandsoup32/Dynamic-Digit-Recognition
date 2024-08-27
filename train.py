@@ -46,11 +46,10 @@ class CNN(nn.Module):
         super(CNN, self).__init__()
         # Size_out = [(size_in + 2*pad - kernel_size)/stride] + 1 floored
 
-        # n_out = (45 + 2 - 3) / 2 + 1 = 23x23
-        self.conv1 = nn.Conv2d(1, 12, kernel_size=5, stride=1, padding=2, dilation=2)  # n_out = (28 + 4 - 5)/1 + 1 = 28
-        self.conv2 = nn.Conv2d(12, 24, kernel_size=5, stride=2, padding=2, dilation=1) # n_out = (28 + 4 - 5)/2 + 1 = 14
-        self.conv3 = nn.Conv2d(24, 28, kernel_size=3, stride=2, padding=1, dilation=1) # n_out = (14 + 2 - 3)/2 + 1 = 7
-        self.conv4 = nn.Conv2d(28, 32, kernel_size=3, stride=2, padding=1, dilation=1) # n_out = (7 + 2 - 3)/2 + 1 = 4
+        self.conv1 = nn.Conv2d(1, 12, kernel_size=5, stride=1, padding=2, dilation=2) 
+        self.conv2 = nn.Conv2d(12, 24, kernel_size=5, stride=2, padding=2, dilation=1) 
+        self.conv3 = nn.Conv2d(24, 28, kernel_size=3, stride=2, padding=1, dilation=1) 
+        self.conv4 = nn.Conv2d(28, 32, kernel_size=3, stride=2, padding=1, dilation=1) 
     
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2) 
 
@@ -127,7 +126,7 @@ def main(num_epochs, experientNum):
 
         print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss}, val loss: {val_loss}")
 
-    torch.save(model.state_dict(), f'save_states/model{experientNum}.pth')  # Save the trained model
+    torch.save(model.state_dict(), f'save_states/CNNmodel{experientNum}.pth')  # Save the trained model
 
 if __name__ == '__main__':
     main(num_epochs=5, experientNum=1)

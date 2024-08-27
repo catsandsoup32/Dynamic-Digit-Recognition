@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flask App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"> <!--This is flask jinga format-->
+</head>
+<body>
+    
+    <div class="container"> <!--- ALL IN CONTAINER FOR FLEXBOX-->
+
+        <div class="navbar" id="clear">Haesol Mathematics</div>
+
+
+
+
+        <div class="main">
+            <div class="canvas-container">
+                <canvas id="myCanvas" width="600" height="400"></canvas>
+            </div>
+            <div class="output">
+                Output Area
+            </div>
+        </div>
+
+    </div>
+    
+
+
+    <!-- Link to the JavaScript file -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
