@@ -35,9 +35,9 @@ class CNN(nn.Module):
         self.batch_norm2 = nn.BatchNorm2d(64)
         self.batch_norm3 = nn.BatchNorm2d(128)
 
-        self.fc1 = nn.Linear(128 * 7 * 7, 1024) # was at 128 * 11 * 11 for 45, for 28 is 7
+        self.fc1 = nn.Linear(128 * 11 * 11, 1024) # was at 128 * 11 * 11 for 45, for 28 is 7
         self.fc2 = nn.Linear(1024, 256)
-        self.fc3 = nn.Linear(256, 10) # was at 81
+        self.fc3 = nn.Linear(256, 81) # was at 81
 
         self.leaky_relu = nn.LeakyReLU(0.01)
         self.relu = nn.ReLU()
@@ -80,7 +80,7 @@ MNIST_dataset_test = datasets.MNIST(root='./data', train=False, transform=MNIST_
 # ------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
-def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_dataset_test, loadFromSaved):
+def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_dataset_test, num_classes, loadFromSaved):
 
     train_loader = DataLoader(use_dataset_train, batch_size=32, shuffle=True, num_workers=5) # num_workers must be with if name
     val_loader = DataLoader(use_dataset_val, batch_size=32, shuffle=False, num_workers=1)
@@ -95,9 +95,9 @@ def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_data
     
     model = CNN()
     criterion = nn.CrossEntropyLoss() # loss function
-    optimizer = optim.Adam(model.parameters(), lr = 0.001)
+    optimizer = optim.Adam(model.parameters(), lr = 0.003)
     scheduler = StepLR(optimizer, step_size = 10, gamma = 0.8)
-    accuracy = Accuracy(task='multiclass', num_classes=10)
+    accuracy = Accuracy(task='multiclass', num_classes=num_classes)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     accuracy = accuracy.to(device)
@@ -153,18 +153,19 @@ def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_data
 
         scheduler.step()
 
-    plt.plot(np.arange(1,num_epochs+1, 1), train_losses, cmap='viridis')
+    plt.plot(np.arange(1,num_epochs+1), train_losses, cmap='viridis')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.title('Loss over time')
     plt.show()
 
 if __name__ == '__main__':
-    main(num_epochs = 10, 
+    main(num_epochs = 20, 
          experimentNum = 9, 
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
+         num_classes = 81,
          loadFromSaved = None)
 
 # Experiment 1: Test, loss at around 0.3, did not print accuracy / 15 epochs
@@ -181,3 +182,4 @@ if __name__ == '__main__':
 # Experiment 7: LR to 0.001, DONT softmax or relu final fc layer
 # Experiment 8: output classes now 10 # THIS WORKS FOR DRAW.PY. Multiply acc by 32 now
 
+# Experiment 9: running
