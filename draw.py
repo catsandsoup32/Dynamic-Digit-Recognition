@@ -15,7 +15,7 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms.functional as TF
 
-from train import transform
+from train import transform, MNIST_transform
 from train import CNN
 from dataloader import class_Labels_Length
 
@@ -164,13 +164,13 @@ class Paint(object):
         model.load_state_dict(torch.load(self.model_folder, map_location=device, weights_only=True))
         model.eval()
 
-        ss_img = self.screenshot_img.resize((45,45))
+        ss_img = PIL.ImageOps.invert(self.screenshot_img.resize((28,28)))
         input_tensor = self.transform(ss_img)
 
         if isinstance(input_tensor, torch.Tensor):   
             input_tensor = input_tensor 
             showIm = np.squeeze(input_tensor.numpy()) 
-            plt.imshow(showIm, cmap='viridis')
+            plt.imshow(showIm, cmap='Greys')
             plt.show() 
 
             input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
@@ -185,8 +185,10 @@ class Paint(object):
         predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
         predictions = list(predictions) 
         
-        labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
-        classes = labels_df['Class_Names'].tolist()
+        # labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
+        # classes = labels_df['Class_Names'].tolist()
+
+        classes = np.arange(10)
         
         max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
         max_class_name = classes[max_index]
@@ -201,5 +203,5 @@ class Paint(object):
         
     
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel1.pt', transform=transform)
+    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel8Epoch5.pt', transform=MNIST_transform)
     

@@ -35,13 +35,13 @@ class CNN(nn.Module):
         self.batch_norm2 = nn.BatchNorm2d(64)
         self.batch_norm3 = nn.BatchNorm2d(128)
 
-        self.fc1 = nn.Linear(128 * 11 * 11, 1024)
+        self.fc1 = nn.Linear(128 * 7 * 7, 1024) # was at 128 * 11 * 11 for 45, for 28 is 7
         self.fc2 = nn.Linear(1024, 256)
-        self.fc3 = nn.Linear(256, 81) 
+        self.fc3 = nn.Linear(256, 10) # was at 81
 
         self.leaky_relu = nn.LeakyReLU(0.01)
         self.relu = nn.ReLU()
-        self.softmax = nn.Softmax2d() # DONT use this because there is already cross entropy loss
+        self.softmax = nn.Softmax() # DONT use this because there is already cross entropy loss
 
     def forward(self, x):
         x = self.pool(self.leaky_relu(self.batch_norm1(self.conv1(x)))) # size = (45 + 4 - 5)/1 + 1 = 45 -> 22 after pool
@@ -52,44 +52,39 @@ class CNN(nn.Module):
         x = self.leaky_relu(self.fc2(x))
         x = self.fc3(x)
         return x
+    
+# transform and init data
+from dataloader import MathSymbolDataset
 
+transform = transforms.Compose([
+    transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
+    transforms.ToTensor(),
+    transforms.Normalize(mean=(0.5,), std=(0.5,)) # subtract 0.5 and then divide 0.5 (z-score)
+])
+
+MNIST_transform = transforms.Compose([
+    transforms.Grayscale(num_output_channels=1),
+    transforms.Resize((28,28)),
+    transforms.ToTensor()
+])
+
+train_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'train', transform=transform, seed=42)
+train_size = int(0.9 * len(train_dataset)) # split into train and val set
+val_size = len(train_dataset) - train_size
+new_train_dataset, val_dataset = random_split(dataset=train_dataset, lengths=[train_size, val_size])
+test_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'test', transform=transform, seed=42)
+
+MNIST_dataset = datasets.MNIST(root='./data', train=True, transform=MNIST_transform, download=True)
+MNIST_dataset_test = datasets.MNIST(root='./data', train=False, transform=MNIST_transform, download=True)
 
 # ------------------------------------------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
-def main(num_epochs, experimentNum, loadFromSaved):
+def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_dataset_test, loadFromSaved):
 
-    # transform and init data
-    from dataloader import MathSymbolDataset
-
-    transform = transforms.Compose([
-        transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
-        transforms.ToTensor(),
-        transforms.Normalize(mean=(0.5,), std=(0.5,)) # subtract 0.5 and then divide 0.5 (z-score)
-    ])
-
-    train_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'train', transform=transform, seed=42)
-    train_size = int(0.9 * len(train_dataset)) # split into train and val set
-    val_size = len(train_dataset) - train_size
-    new_train_dataset, val_dataset = random_split(dataset=train_dataset, lengths=[train_size, val_size])
-    test_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'test', transform=transform, seed=42)
-
-    train_loader = DataLoader(new_train_dataset, batch_size=32, shuffle=True, num_workers=5) # num_workers must be with if name
-    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
-    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=1)
-
-    for test_im, test_label in train_loader:
-        # Squeeze the tensor to remove single-dimensional entries from the shape
-        image = test_im[0].squeeze().numpy()  # Convert to numpy array
-        # If it's grayscale, plt.imshow expects shape (H, W)
-        if image.shape[0] == 1:
-            image = image[0]  # If the image is grayscale, remove the channel dimension
-        # Plot the image
-        plt.imshow(image, cmap='gray')
-        plt.title(f'test_label[0]')
-        plt.show()
-        # Print the label
-        print(test_label[0])
-        break
+    train_loader = DataLoader(use_dataset_train, batch_size=32, shuffle=True, num_workers=5) # num_workers must be with if name
+    val_loader = DataLoader(use_dataset_val, batch_size=32, shuffle=False, num_workers=1)
+    test_loader = DataLoader(use_dataset_test, batch_size=32, shuffle=False, num_workers=1)
 
     # About 270,000 elements in new_train_dataset
     # Each element is a length two tuple containing 1: a 1x45x45 tensor and 2: the label number
@@ -100,9 +95,9 @@ def main(num_epochs, experimentNum, loadFromSaved):
     
     model = CNN()
     criterion = nn.CrossEntropyLoss() # loss function
-    optimizer = optim.Adam(model.parameters(), lr = 0.003)
+    optimizer = optim.Adam(model.parameters(), lr = 0.001)
     scheduler = StepLR(optimizer, step_size = 10, gamma = 0.8)
-    accuracy = Accuracy(task='multiclass', num_classes=81)
+    accuracy = Accuracy(task='multiclass', num_classes=10)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     accuracy = accuracy.to(device)
@@ -130,7 +125,7 @@ def main(num_epochs, experimentNum, loadFromSaved):
             optimizer.step()
             optimizer.zero_grad()
             
-        train_acc = running_acc / len(train_loader.dataset) 
+        train_acc = running_acc / len(train_loader.dataset) * 32 * 100
         train_accs.append(train_acc)
         train_loss = running_loss / len(train_loader.dataset) 
         train_losses.append(train_loss)
@@ -150,7 +145,7 @@ def main(num_epochs, experimentNum, loadFromSaved):
 
             val_loss = running_loss / len(val_loader.dataset) 
             val_losses.append(val_loss)
-            val_acc = running_acc / len(val_loader.dataset) 
+            val_acc = running_acc / len(val_loader.dataset) * 32 * 100
             val_accs.append(val_acc)
 
         print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss} train acc: {train_acc}, val loss: {val_loss}, val acc: {val_acc}")
@@ -158,14 +153,19 @@ def main(num_epochs, experimentNum, loadFromSaved):
 
         scheduler.step()
 
-    plt.scatter(np.arange(1,num_epochs+1, 1), train_losses, cmap='viridis')
+    plt.plot(np.arange(1,num_epochs+1, 1), train_losses, cmap='viridis')
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.title('Loss over time')
     plt.show()
 
 if __name__ == '__main__':
-    main(num_epochs=100, experimentNum=6, loadFromSaved=None)
+    main(num_epochs = 10, 
+         experimentNum = 9, 
+         use_dataset_train = new_train_dataset,
+         use_dataset_val = val_dataset,
+         use_dataset_test = test_dataset,
+         loadFromSaved = None)
 
 # Experiment 1: Test, loss at around 0.3, did not print accuracy / 15 epochs
 # Experiment 2: Learning rate probably too slow, loss was arund 0.1 and only 3 percent acc, loaded experiment 1 and had 7 more epochs
@@ -176,3 +176,8 @@ if __name__ == '__main__':
 
 # Experiment 6: Change LR to 0.003, num_workers = 5, step scheduler added with step_size = 10 and gamma = 0.8
 # Epoch 100/100 - Train loss: 0.009682740432858926 train acc: 0.031166922301054, val loss: 0.15009788159322832, val acc: 0.03110380657017231 ....................
+
+# Experiment 7: TRIED Mnist dataset, LR too high, acc still around 3 percent, might really be *32 issue
+# Experiment 7: LR to 0.001, DONT softmax or relu final fc layer
+# Experiment 8: output classes now 10 # THIS WORKS FOR DRAW.PY. Multiply acc by 32 now
+
