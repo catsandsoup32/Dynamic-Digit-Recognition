@@ -87,7 +87,7 @@ model = model.to(device)
 
 # ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
-def main(num_epochs, experientNum):
+def main(num_epochs, experimentNum):
     num_epochs = num_epochs
     train_losses, val_losses, train_accs, val_accs = [], [], [], []
 
@@ -95,6 +95,8 @@ def main(num_epochs, experientNum):
         model.train()
         running_acc, running_loss = 0.0, 0.0
         for images, labels in tqdm(train_loader, desc="training loop"):
+            images = images.to(device)
+            labels = labels.to(device)
             optimizer.zero_grad()
             outputs = model(images)
             loss = criterion(outputs, labels) 
@@ -114,6 +116,8 @@ def main(num_epochs, experientNum):
         running_acc = 0.0
         with torch.no_grad():
             for images, labels in tqdm(val_loader, desc="val loop"):
+                images = images.to(device)
+                labels = labels.to(device)
                 outputs = model(images)
                 loss = criterion(outputs, labels)
                 running_loss += loss.item() * images.size(0)
@@ -124,9 +128,9 @@ def main(num_epochs, experientNum):
             val_acc = running_acc / len(val_loader.dataset)
             val_accs.append(val_acc)
 
-        print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss}, val loss: {val_loss}")
+        print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss} train acc: {train_acc}, val loss: {val_loss}, val acc: {val_acc}")
 
-    torch.save(model.state_dict(), f'save_states/CNNmodel{experientNum}.pth')  # Save the trained model
+    torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}.pt')  # Save the trained model
 
 if __name__ == '__main__':
-    main(num_epochs=5, experientNum=1)
+    main(num_epochs=15, experimentNum=1)
