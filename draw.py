@@ -160,6 +160,7 @@ class Paint(object):
     def run_inference(self):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model = self.model
+        model = model.to(device)
         model.load_state_dict(torch.load(self.model_folder, map_location=device, weights_only=True))
         model.eval()
 
@@ -181,8 +182,9 @@ class Paint(object):
         
         output = output.squeeze(0)  # Remove batch dimension
         print(f"Amount of predictions: {output.shape}")
-        predictions = list(output)  
-
+        predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
+        predictions = list(predictions) 
+        
         labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
         classes = labels_df['Class_Names'].tolist()
         
@@ -194,7 +196,7 @@ class Paint(object):
         plt.annotate(f'Highest: {max_class_name}',
              xy=(max_index, predictions[max_index]),
              xytext=(max_index, predictions[max_index] + 0.1),
-             arrowprops=dict(facecolor='red', edgecolor='black', arrowstyle='->', lw=1.5))
+             arrowprops=dict(facecolor='red', edgecolor='red', arrowstyle='->', lw=1.5))
         plt.show()
         
     

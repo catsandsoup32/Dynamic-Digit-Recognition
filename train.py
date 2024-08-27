@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 from torchvision import datasets
 from torchvision.datasets import ImageFolder
 from torchmetrics import Accuracy
+from torch.optim.lr_scheduler import StepLR
 from tqdm import tqdm
 
 import matplotlib.pyplot as plt
@@ -16,107 +17,122 @@ import os
 from PIL import Image
 
 
-
-# transform and init data
-from dataloader import MathSymbolDataset
-
-transform = transforms.Compose([
-    transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
-    transforms.ToTensor(),
-    transforms.Normalize(mean=(0.5,), std=(0.5,)) # subtract 0.5 and then divide 0.5 (z-score)
-])
-
-train_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'train', transform=transform, seed=42)
-train_size = int(0.9 * len(train_dataset)) # split into train and val set
-val_size = len(train_dataset) - train_size
-new_train_dataset, val_dataset = random_split(dataset=train_dataset, lengths=[train_size, val_size])
-test_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'test', transform=transform, seed=42)
-
-train_loader = DataLoader(new_train_dataset, batch_size=32, shuffle=True) # not using num_workers yet, can do it with if name
-val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
-
-for test_im, test_label in train_loader:
-    # torch.set_printoptions(threshold=torch.inf)
-    # print(test_im)
-    break
-
-# About 270,000 elements in new_train_dataset
-# Each element is a length two tuple containing 1: a 1x45x45 tensor and 2: the label number
-
 # ------------------------------------------------------------------------------------------------------------------
 # Define model
 
 class CNN(nn.Module):
     def __init__(self):
         super(CNN, self).__init__()
-        # Size_out = [(size_in + 2*pad - kernel_size)/stride] + 1 floored
+        # Size_out = [(size_in + 2*pad - kernel_size)/stride] floored + 1 
 
-        self.conv1 = nn.Conv2d(1, 12, kernel_size=5, stride=1, padding=2, dilation=2) 
-        self.conv2 = nn.Conv2d(12, 24, kernel_size=5, stride=2, padding=2, dilation=1) 
-        self.conv3 = nn.Conv2d(24, 28, kernel_size=3, stride=2, padding=1, dilation=1) 
-        self.conv4 = nn.Conv2d(28, 32, kernel_size=3, stride=2, padding=1, dilation=1) 
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2, dilation=1) 
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2, dilation=1) 
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, dilation=1) 
     
         self.pool = nn.MaxPool2d(kernel_size=2, stride=2) 
 
-        self.batch_norm1 = nn.BatchNorm2d(num_features=12) # C from (N, C, H, W) filter for more complex feature
-        self.batch_norm2 = nn.BatchNorm2d(24)
-        self.batch_norm3 = nn.BatchNorm2d(28)
-        self.batch_norm4 = nn.BatchNorm2d(32)
+        self.batch_norm1 = nn.BatchNorm2d(num_features=32) # C from (N, C, H, W) filter for more complex feature
+        self.batch_norm2 = nn.BatchNorm2d(64)
+        self.batch_norm3 = nn.BatchNorm2d(128)
 
-        self.fc1 = nn.Linear(32, 512)
-        self.fc2 = nn.Linear(512, 256)
+        self.fc1 = nn.Linear(128 * 11 * 11, 1024)
+        self.fc2 = nn.Linear(1024, 256)
         self.fc3 = nn.Linear(256, 81) 
 
         self.leaky_relu = nn.LeakyReLU(0.01)
-        self.softmax = nn.Softmax2d() 
+        self.relu = nn.ReLU()
+        self.softmax = nn.Softmax2d() # DONT use this because there is already cross entropy loss
 
     def forward(self, x):
-        x = self.pool(self.leaky_relu(self.batch_norm1(self.conv1(x))))
-        x = self.pool(self.leaky_relu(self.batch_norm2(self.conv2(x))))
-        x = self.pool(self.leaky_relu(self.batch_norm3(self.conv3(x))))
-        x = self.softmax(self.leaky_relu((self.batch_norm4(self.conv4(x)))))
-        x = x.view(x.size(0), -1)
+        x = self.pool(self.leaky_relu(self.batch_norm1(self.conv1(x)))) # size = (45 + 4 - 5)/1 + 1 = 45 -> 22 after pool
+        x = self.leaky_relu(self.batch_norm2(self.conv2(x)))            # size = (22 + 4 - 5)/1 + 1 = 22
+        x = self.pool(self.leaky_relu(self.batch_norm3(self.conv3(x)))) # size = (22 + 2 - 3)/1 + 1 = 22 -> 11 after pool
+        x = x.view(x.size(0), -1) # flattens the tensor into [batch_size x (128 * 11 * 11)]
         x = self.leaky_relu(self.fc1(x))
         x = self.leaky_relu(self.fc2(x))
         x = self.fc3(x)
         return x
 
-model = CNN()
-criterion = nn.CrossEntropyLoss() # loss function
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-accuracy = Accuracy(task='multiclass', num_classes=81)
-
-device = 'cuda' if torch.cuda.is_available() else 'cpu'
-accuracy = accuracy.to(device)
-model = model.to(device)
 
 # ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
 def main(num_epochs, experimentNum, loadFromSaved):
+
+    # transform and init data
+    from dataloader import MathSymbolDataset
+
+    transform = transforms.Compose([
+        transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.5,), std=(0.5,)) # subtract 0.5 and then divide 0.5 (z-score)
+    ])
+
+    train_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'train', transform=transform, seed=42)
+    train_size = int(0.9 * len(train_dataset)) # split into train and val set
+    val_size = len(train_dataset) - train_size
+    new_train_dataset, val_dataset = random_split(dataset=train_dataset, lengths=[train_size, val_size])
+    test_dataset = MathSymbolDataset(data_dir='data/extracted_images', mode = 'test', transform=transform, seed=42)
+
+    train_loader = DataLoader(new_train_dataset, batch_size=32, shuffle=True, num_workers=5) # num_workers must be with if name
+    val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False, num_workers=1)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=1)
+
+    for test_im, test_label in train_loader:
+        # Squeeze the tensor to remove single-dimensional entries from the shape
+        image = test_im[0].squeeze().numpy()  # Convert to numpy array
+        # If it's grayscale, plt.imshow expects shape (H, W)
+        if image.shape[0] == 1:
+            image = image[0]  # If the image is grayscale, remove the channel dimension
+        # Plot the image
+        plt.imshow(image, cmap='gray')
+        plt.title(f'test_label[0]')
+        plt.show()
+        # Print the label
+        print(test_label[0])
+        break
+
+    # About 270,000 elements in new_train_dataset
+    # Each element is a length two tuple containing 1: a 1x45x45 tensor and 2: the label number
+
+    # start loop -----------------------------------------------------------------------------------------------------
     num_epochs = num_epochs
     train_losses, val_losses, train_accs, val_accs = [], [], [], []
+    
+    model = CNN()
+    criterion = nn.CrossEntropyLoss() # loss function
+    optimizer = optim.Adam(model.parameters(), lr = 0.003)
+    scheduler = StepLR(optimizer, step_size = 10, gamma = 0.8)
+    accuracy = Accuracy(task='multiclass', num_classes=81)
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    accuracy = accuracy.to(device)
+    model = model.to(device)
 
     if loadFromSaved is not None:
         model.load_state_dict(torch.load(loadFromSaved, map_location=device, weights_only=True))
     
     for epoch in range(num_epochs):
         model.train()
-        running_acc, running_loss = 0.0, 0.0
-        for images, labels in tqdm(train_loader, desc="training loop"):
+        running_loss, running_acc = 0.0, 0.0
+        accuracy.reset()
+        
+        for images, labels in tqdm(train_loader, desc=f"Epoch {epoch+1}: training loop"):
             images = images.to(device)
             labels = labels.to(device)
-            optimizer.zero_grad()
-            outputs = model(images)
+
+            outputs = model(images) # forward pass
             loss = criterion(outputs, labels) 
-            loss.backward()
-            optimizer.step()
+
             running_loss += loss.item() * images.size(0) # loss tensor times batch size
             running_acc += accuracy(outputs, labels)
 
-        train_acc = running_acc / len(train_loader.dataset)
+            loss.backward()
+            optimizer.step()
+            optimizer.zero_grad()
+            
+        train_acc = running_acc / len(train_loader.dataset) 
         train_accs.append(train_acc)
-        train_loss = running_loss / len(train_loader.dataset)
+        train_loss = running_loss / len(train_loader.dataset) 
         train_losses.append(train_loss)
 
         # valid phase
@@ -124,7 +140,7 @@ def main(num_epochs, experimentNum, loadFromSaved):
         running_loss = 0.0
         running_acc = 0.0
         with torch.no_grad():
-            for images, labels in tqdm(val_loader, desc="val loop"):
+            for images, labels in tqdm(val_loader, desc=f"Epoch {epoch+1}: val loop"):
                 images = images.to(device)
                 labels = labels.to(device)
                 outputs = model(images)
@@ -132,18 +148,31 @@ def main(num_epochs, experimentNum, loadFromSaved):
                 running_loss += loss.item() * images.size(0)
                 running_acc += accuracy(outputs, labels)
 
-            val_loss = running_loss / len(val_loader.dataset)
+            val_loss = running_loss / len(val_loader.dataset) 
             val_losses.append(val_loss)
-            val_acc = running_acc / len(val_loader.dataset)
+            val_acc = running_acc / len(val_loader.dataset) 
             val_accs.append(val_acc)
 
         print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss} train acc: {train_acc}, val loss: {val_loss}, val acc: {val_acc}")
+        torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
 
-        if num_epochs % 10 == 0:
-            torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch}.pt')  # Save the trained model
+        scheduler.step()
+
+    plt.scatter(np.arange(1,num_epochs+1, 1), train_losses, cmap='viridis')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.title('Loss over time')
+    plt.show()
 
 if __name__ == '__main__':
-    main(num_epochs=15, experimentNum=2, loadFromSaved='save_states/CNNmodel1.pt')
+    main(num_epochs=100, experimentNum=6, loadFromSaved=None)
 
-# Experiment 1: Test, loss at around 0.3, did not print accuracy
-# Experiment 2: 
+# Experiment 1: Test, loss at around 0.3, did not print accuracy / 15 epochs
+# Experiment 2: Learning rate probably too slow, loss was arund 0.1 and only 3 percent acc, loaded experiment 1 and had 7 more epochs
+# Experiment 3: Load from experiment 2 and change LR from 0.001 to 0.01. Realized architecture is wrong, now remove softmax and adjust some in/out feature sizes
+
+# Experiment 4: Start over at zero, didn't save anything - LR too high (according to graph in Spis Notes 3.6)
+# Experiment 5: Change LR to 0.005 and use num_workers = 8, added mpl to be able to check learning rate, this one took very long time to start up 
+
+# Experiment 6: Change LR to 0.003, num_workers = 5, step scheduler added with step_size = 10 and gamma = 0.8
+# Epoch 100/100 - Train loss: 0.009682740432858926 train acc: 0.031166922301054, val loss: 0.15009788159322832, val acc: 0.03110380657017231 ....................
