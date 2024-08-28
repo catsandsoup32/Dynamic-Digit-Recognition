@@ -133,8 +133,8 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
     plt.show()
 
 if __name__ == '__main__':
-    main(num_epochs = 30, 
-         experimentNum = 10, 
+    main(num_epochs = 15, 
+         experimentNum = 11, 
          use_model = VamsiNN(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
@@ -159,6 +159,7 @@ if __name__ == '__main__':
 # Experiment 9: 20 epochs 98 acc, LR 0.003
 # Experiment 10: 30 epochs, LR 0.004, peak accuracy at 98   
 
-# TESTED MODEL_9_E_20 with 
+# TESTED MODEL_9_E_20 with drawpy and got reasonable results. Seems to overfit when characters are written in messy handwriting
 
-# Experiment 11: Try a pad=0, batch_norm FC_2 for main model
+# Experiment 11: Tried VamsiNN, worked with 98.8 val acc on 15th epoch
+# Experiment 12: Try a pad=0, stride all equals 1, only 2 fc layers, batch_norm FC_1 for 98 epochs; 
