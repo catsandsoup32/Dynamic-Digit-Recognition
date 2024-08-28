@@ -39,6 +39,8 @@ class CNN(nn.Module):
         self.fc2 = nn.Linear(1024, 256)
         self.fc3 = nn.Linear(256, 81) # was at 81
 
+        self.dropout = nn.Dropout(p=0.2)
+
         self.leaky_relu = nn.LeakyReLU(0.01)
         self.relu = nn.ReLU()
         self.softmax = nn.Softmax() # DONT use this because there is already cross entropy loss
@@ -95,7 +97,7 @@ def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_data
     
     model = CNN()
     criterion = nn.CrossEntropyLoss() # loss function
-    optimizer = optim.Adam(model.parameters(), lr = 0.003)
+    optimizer = optim.Adam(model.parameters(), lr = 0.004)
     scheduler = StepLR(optimizer, step_size = 10, gamma = 0.8)
     accuracy = Accuracy(task='multiclass', num_classes=num_classes)
 
@@ -149,19 +151,24 @@ def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_data
             val_accs.append(val_acc)
 
         print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss} train acc: {train_acc}, val loss: {val_loss}, val acc: {val_acc}")
-        torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
+    
 
         scheduler.step()
 
-    plt.plot(np.arange(1,num_epochs+1), train_losses, cmap='viridis')
+        if (epoch+1) % 10 == 0:
+            torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
+
+    torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
+
+    plt.plot(np.arange(1,num_epochs+1), train_losses)
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.title('Loss over time')
     plt.show()
 
 if __name__ == '__main__':
-    main(num_epochs = 20, 
-         experimentNum = 9, 
+    main(num_epochs = 30, 
+         experimentNum = 10, 
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
@@ -182,4 +189,5 @@ if __name__ == '__main__':
 # Experiment 7: LR to 0.001, DONT softmax or relu final fc layer
 # Experiment 8: output classes now 10 # THIS WORKS FOR DRAW.PY. Multiply acc by 32 now
 
-# Experiment 9: running
+# Experiment 9: 20 epochs 98 acc, LR 0.003
+# Experiment 10: 30 epochs, LR 0.004, peak accuracy at 98   
