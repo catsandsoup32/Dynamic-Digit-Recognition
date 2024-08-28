@@ -48,7 +48,7 @@ MNIST_dataset_test = datasets.MNIST(root='./data', train=False, transform=MNIST_
 # ------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
-def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_val, use_dataset_test, num_classes, loadFromSaved):
+def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_val, use_dataset_test, num_classes, loadFromSaved, test_loop):
 
     train_loader = DataLoader(use_dataset_train, batch_size=32, shuffle=True, num_workers=5) # num_workers must be with if name
     val_loader = DataLoader(use_dataset_val, batch_size=32, shuffle=False, num_workers=1)
@@ -126,11 +126,23 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
 
     torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
 
-    plt.plot(np.arange(1,num_epochs+1), train_losses)
+    plt.plot(np.arange(1,num_epochs+1), list(train_losses))
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.title('Loss over time')
     plt.show()
+
+    if test_loop:
+        model.eval()
+        running_acc = 0.0
+        for images, labels in tqdm(test_loader, desc="testing"):
+            images = images.to(device)
+            labels = labels.to(device)
+            outputs = model(images)
+            running_acc += accuracy(outputs, images)
+        
+        test_loss = running_acc / len(test_loader.dataset) * 32 * 100
+        print(f"TEST LOSS: {test_loss}")
 
 if __name__ == '__main__':
     main(num_epochs = 98, 
@@ -140,7 +152,10 @@ if __name__ == '__main__':
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
          num_classes = 81,
-         loadFromSaved = None)
+         loadFromSaved = None,
+         test_loop = False)
+    
+
 
 # Experiment 1: Test, loss at around 0.3, did not print accuracy / 15 epochs
 # Experiment 2: Learning rate probably too slow, loss was arund 0.1 and only 3 percent acc, loaded experiment 1 and had 7 more epochs
@@ -163,3 +178,8 @@ if __name__ == '__main__':
 
 # Experiment 11: Tried VamsiNN, worked with 98.8 val acc on 15th epoch
 # Experiment 12: Try a pad=0, stride all equals 1, only 2 fc layers, batch_norm FC_1 for 98 epochs, LR 0.0035
+#                E25 seems pretty overfitted (under?), works better with pen size 45, values also all negative 
+#                E50 has positive values with pen size 45 and drawing fill up the screen
+#                E75 is AWFUL, so is E98, keep going with E50 and change pen sizes
+
+# Experiment 13: Get rid of gray noise, 

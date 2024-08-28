@@ -15,7 +15,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from train import transform, MNIST_transform
-from train import CNN
+from train import CNN, VamsiNN
 from dataloader import class_Labels_Length
 
 class Paint(object):
@@ -23,19 +23,20 @@ class Paint(object):
     DEFAULT_PEN_SIZE = 5.0
     DEFAULT_COLOR = 'black'
 
-    def __init__(self, model, model_folder, transform):
+    def __init__(self, model, model_folder, transform, ss_module):
         self.root = Tk()
         self.root.title("Paint Window")
         self.window_title = "Paint Window"
         self.model = model
         self.model_folder = model_folder
         self.transform = transform
+        self.module = ss_module
 
         self.pen_button = Button(self.root, text='pen', command=self.use_pen)
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
         self.clear_button = Button(self.root, text='clear', command=self.clear_canvas)
         self.predict_button = Button(self.root, text='predict', command=self.predict)
-        self.choose_size_button = Scale(self.root, from_=1, to=1000, orient=HORIZONTAL)
+        self.choose_size_button = Scale(self.root, from_=35, to=100, orient=HORIZONTAL)
 
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
@@ -43,18 +44,23 @@ class Paint(object):
         self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
         self.choose_size_button.grid(row=0, column=4, padx=5, pady=5, sticky='w')
 
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        self.model = self.model.to(self.device)
+        self.model.load_state_dict(torch.load(self.model_folder, map_location=self.device, weights_only=True))
+        self.model.eval()
+
         # Canvas and output area
         self.c = Canvas(self.root, bg='white')
         self.output_frame = Canvas(self.root, bg='lightgrey')  # Placeholder for output area
 
         # Arrange canvas and output area in a 2-column layout
-        self.c.grid(row=1, column=0, sticky='nsew')
-        self.output_frame.grid(row=1, column=1, sticky='ns')
+        self.c.grid(row=1, column=0, sticky='nsew', padx=0, pady=0)
+        self.output_frame.grid(row=1, column=1, sticky='nsew', padx=0, pady=0)
         
         # Configure grid to adjust sizes
         self.root.grid_rowconfigure(1, weight=1)
-        self.root.grid_columnconfigure(0, weight=7)  # Canvas takes 70% of space
-        self.root.grid_columnconfigure(1, weight=3)  # Output area takes 30% of space
+        self.root.grid_columnconfigure(0, weight=3)  
+        self.root.grid_columnconfigure(1, weight=1)
 
         self.root.attributes('-fullscreen', True)  # Fullscreen mode
         self.setup()
@@ -150,12 +156,12 @@ class Paint(object):
         self.root.update_idletasks()  # Ensure all events are processed
 
         left = self.c.winfo_rootx()
-        top = self.c.winfo_rooty() 
+        top = self.c.winfo_rooty()  
         width = self.c.winfo_width()
         height = self.c.winfo_height() 
 
         bbox = (left, top, width, height)
-        img = pyautogui.screenshot(region=bbox) 
+        img = self.module.screenshot(region=bbox) 
         self.screenshot_img = img # PIL image is stored here
 
         # Show the button grid again
@@ -168,13 +174,14 @@ class Paint(object):
         self.run_inference()
 
     def run_inference(self):
+        '''
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model = self.model
         model = model.to(device)
         model.load_state_dict(torch.load(self.model_folder, map_location=device, weights_only=True))
-        model.eval()
+        model.eval()'''
 
-        ss_img = self.screenshot_img.resize((45,45))
+        ss_img = self.screenshot_img.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
         input_tensor = self.transform(ss_img)
 
         if isinstance(input_tensor, torch.Tensor):   
@@ -185,10 +192,10 @@ class Paint(object):
             input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
             torch.set_printoptions(threshold=1000, edgeitems=10)
             print(f"Image tensor of size {input_tensor.size()}: {input_tensor}")
-            input_tensor = input_tensor.to(device)
+            input_tensor = input_tensor.to(self.device)
          
         with torch.no_grad():
-            output = model(input_tensor)    
+            output = self.model(input_tensor)    
         
         output = output.squeeze(0)  # Remove batch dimension
         print(f"Amount of predictions: {output.shape}")
@@ -213,5 +220,4 @@ class Paint(object):
         
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel9Epoch20.pt', transform=transform)
-    
+    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel12Epoch50.pt', transform=transform, ss_module=pyautogui)
