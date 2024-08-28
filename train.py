@@ -19,42 +19,8 @@ from PIL import Image
 
 # ------------------------------------------------------------------------------------------------------------------
 # Define model
+from models import CNN, VamsiNN
 
-class CNN(nn.Module):
-    def __init__(self):
-        super(CNN, self).__init__()
-        # Size_out = [(size_in + 2*pad - kernel_size)/stride] floored + 1 
-
-        self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2, dilation=1) 
-        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=2, dilation=1) 
-        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1, dilation=1) 
-    
-        self.pool = nn.MaxPool2d(kernel_size=2, stride=2) 
-
-        self.batch_norm1 = nn.BatchNorm2d(num_features=32) # C from (N, C, H, W) filter for more complex feature
-        self.batch_norm2 = nn.BatchNorm2d(64)
-        self.batch_norm3 = nn.BatchNorm2d(128)
-
-        self.fc1 = nn.Linear(128 * 11 * 11, 1024) # was at 128 * 11 * 11 for 45, for 28 is 7
-        self.fc2 = nn.Linear(1024, 256)
-        self.fc3 = nn.Linear(256, 81) # was at 81
-
-        self.dropout = nn.Dropout(p=0.2)
-
-        self.leaky_relu = nn.LeakyReLU(0.01)
-        self.relu = nn.ReLU()
-        self.softmax = nn.Softmax() # DONT use this because there is already cross entropy loss
-
-    def forward(self, x):
-        x = self.pool(self.leaky_relu(self.batch_norm1(self.conv1(x)))) # size = (45 + 4 - 5)/1 + 1 = 45 -> 22 after pool
-        x = self.leaky_relu(self.batch_norm2(self.conv2(x)))            # size = (22 + 4 - 5)/1 + 1 = 22
-        x = self.pool(self.leaky_relu(self.batch_norm3(self.conv3(x)))) # size = (22 + 2 - 3)/1 + 1 = 22 -> 11 after pool
-        x = x.view(x.size(0), -1) # flattens the tensor into [batch_size x (128 * 11 * 11)]
-        x = self.leaky_relu(self.fc1(x))
-        x = self.leaky_relu(self.fc2(x))
-        x = self.fc3(x)
-        return x
-    
 # transform and init data
 from dataloader import MathSymbolDataset
 
@@ -82,7 +48,7 @@ MNIST_dataset_test = datasets.MNIST(root='./data', train=False, transform=MNIST_
 # ------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------
 # Train and val loops
-def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_dataset_test, num_classes, loadFromSaved):
+def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_val, use_dataset_test, num_classes, loadFromSaved):
 
     train_loader = DataLoader(use_dataset_train, batch_size=32, shuffle=True, num_workers=5) # num_workers must be with if name
     val_loader = DataLoader(use_dataset_val, batch_size=32, shuffle=False, num_workers=1)
@@ -95,7 +61,7 @@ def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_data
     num_epochs = num_epochs
     train_losses, val_losses, train_accs, val_accs = [], [], [], []
     
-    model = CNN()
+    model = use_model
     criterion = nn.CrossEntropyLoss() # loss function
     optimizer = optim.Adam(model.parameters(), lr = 0.004)
     scheduler = StepLR(optimizer, step_size = 10, gamma = 0.8)
@@ -169,6 +135,7 @@ def main(num_epochs, experimentNum, use_dataset_train, use_dataset_val, use_data
 if __name__ == '__main__':
     main(num_epochs = 30, 
          experimentNum = 10, 
+         use_model = VamsiNN(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
@@ -191,3 +158,7 @@ if __name__ == '__main__':
 
 # Experiment 9: 20 epochs 98 acc, LR 0.003
 # Experiment 10: 30 epochs, LR 0.004, peak accuracy at 98   
+
+# TESTED MODEL_9_E_20 with 
+
+# Experiment 11: Try a pad=0, batch_norm FC_2 for main model

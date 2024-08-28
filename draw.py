@@ -12,7 +12,6 @@ import matplotlib.pyplot as plt
 
 import torch
 import torch.nn as nn
-import torchvision
 import torchvision.transforms.functional as TF
 
 from train import transform, MNIST_transform
@@ -33,26 +32,35 @@ class Paint(object):
         self.transform = transform
 
         self.pen_button = Button(self.root, text='pen', command=self.use_pen)
-        self.pen_button.grid(row=0, column=0)
-
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
-        self.eraser_button.grid(row=0, column=3)
-
         self.clear_button = Button(self.root, text='clear', command=self.clear_canvas)
-        self.clear_button.grid(row=0, column=2)
-
         self.predict_button = Button(self.root, text='predict', command=self.predict)
-        self.predict_button.grid(row=0, column=1)
+        self.choose_size_button = Scale(self.root, from_=1, to=1000, orient=HORIZONTAL)
 
-        self.choose_size_button = Scale(self.root, from_=1, to=10, orient=HORIZONTAL)
-        self.choose_size_button.grid(row=0, column=4)
+        self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        self.clear_button.grid(row=0, column=2, padx=5, pady=5, sticky='w')
+        self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
+        self.choose_size_button.grid(row=0, column=4, padx=5, pady=5, sticky='w')
 
-        self.c = Canvas(self.root, bg='white', width=1000, height=1000)
-        self.c.grid(row=1, columnspan=5)
+        # Canvas and output area
+        self.c = Canvas(self.root, bg='white')
+        self.output_frame = Canvas(self.root, bg='lightgrey')  # Placeholder for output area
 
+        # Arrange canvas and output area in a 2-column layout
+        self.c.grid(row=1, column=0, sticky='nsew')
+        self.output_frame.grid(row=1, column=1, sticky='ns')
+        
+        # Configure grid to adjust sizes
+        self.root.grid_rowconfigure(1, weight=1)
+        self.root.grid_columnconfigure(0, weight=7)  # Canvas takes 70% of space
+        self.root.grid_columnconfigure(1, weight=3)  # Output area takes 30% of space
+
+        self.root.attributes('-fullscreen', True)  # Fullscreen mode
         self.setup()
+        self.root.bind("<Escape>", self.exit_fullscreen)  # Bind Escape to exit fullscreen
         self.root.bind('<Control-z>', self.undo)
-        self.root.bind('<Escape>', self.close_window)
+        self.root.bind('<Q>', self.close_window)
         self.root.after(100, self.print_window_size)
         self.root.mainloop()
 
@@ -68,6 +76,10 @@ class Paint(object):
 
         self.objects = []
         self.screenshot_img = None
+
+    def exit_fullscreen(self, event=None):
+        self.root.attributes('-fullscreen', False)
+        self.root.quit()
 
     def use_pen(self):
         self.activate_button(self.pen_button)
@@ -97,8 +109,6 @@ class Paint(object):
                                width=self.line_width, fill=paint_color,
                                capstyle=ROUND, smooth=TRUE, splinesteps=36)
             self.objects.append(obj_id)  # Store the object's ID for undo
-
-
         self.old_x = event.x
         self.old_y = event.y
 
@@ -139,21 +149,21 @@ class Paint(object):
         self.root.update()  # Force update
         self.root.update_idletasks()  # Ensure all events are processed
 
-        left = self.root.winfo_rootx()
-        top = self.root.winfo_rooty() 
-        width = self.root.winfo_width()
-        height = self.root.winfo_height() 
+        left = self.c.winfo_rootx()
+        top = self.c.winfo_rooty() 
+        width = self.c.winfo_width()
+        height = self.c.winfo_height() 
 
         bbox = (left, top, width, height)
         img = pyautogui.screenshot(region=bbox) 
         self.screenshot_img = img # PIL image is stored here
 
         # Show the button grid again
-        self.pen_button.grid(row=0, column=0)
-        self.eraser_button.grid(row=0, column=3)
-        self.clear_button.grid(row=0, column=2)
-        self.predict_button.grid(row=0, column=1)
-        self.choose_size_button.grid(row=0, column=4)
+        self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='w')
+        self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+        self.clear_button.grid(row=0, column=2, padx=5, pady=5, sticky='w')
+        self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
+        self.choose_size_button.grid(row=0, column=4, padx=5, pady=5, sticky='w')
 
         self.run_inference()
 
@@ -164,17 +174,17 @@ class Paint(object):
         model.load_state_dict(torch.load(self.model_folder, map_location=device, weights_only=True))
         model.eval()
 
-        ss_img = PIL.ImageOps.invert(self.screenshot_img.resize((28,28)))
+        ss_img = self.screenshot_img.resize((45,45))
         input_tensor = self.transform(ss_img)
 
         if isinstance(input_tensor, torch.Tensor):   
-            input_tensor = input_tensor 
             showIm = np.squeeze(input_tensor.numpy()) 
-            plt.imshow(showIm, cmap='Greys')
+            plt.imshow(showIm)
             plt.show() 
 
             input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
-            print(f"Image tensor: {input_tensor}")
+            torch.set_printoptions(threshold=1000, edgeitems=10)
+            print(f"Image tensor of size {input_tensor.size()}: {input_tensor}")
             input_tensor = input_tensor.to(device)
          
         with torch.no_grad():
@@ -185,10 +195,10 @@ class Paint(object):
         predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
         predictions = list(predictions) 
         
-        # labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
-        # classes = labels_df['Class_Names'].tolist()
+        labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
+        classes = labels_df['Class_Names'].tolist()
 
-        classes = np.arange(10)
+        # classes = np.arange(10)
         
         max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
         max_class_name = classes[max_index]
@@ -201,7 +211,7 @@ class Paint(object):
              arrowprops=dict(facecolor='red', edgecolor='red', arrowstyle='->', lw=1.5))
         plt.show()
         
-    
+
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel8Epoch5.pt', transform=MNIST_transform)
+    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel9Epoch20.pt', transform=transform)
     
