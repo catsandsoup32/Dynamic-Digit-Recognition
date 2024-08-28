@@ -63,7 +63,7 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
     
     model = use_model
     criterion = nn.CrossEntropyLoss() # loss function
-    optimizer = optim.Adam(model.parameters(), lr = 0.004)
+    optimizer = optim.Adam(model.parameters(), lr = 0.0035)
     scheduler = StepLR(optimizer, step_size = 10, gamma = 0.8)
     accuracy = Accuracy(task='multiclass', num_classes=num_classes)
 
@@ -121,7 +121,7 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
 
         scheduler.step()
 
-        if (epoch+1) % 10 == 0:
+        if (epoch+1) % 25 == 0:
             torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
 
     torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
@@ -133,9 +133,9 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
     plt.show()
 
 if __name__ == '__main__':
-    main(num_epochs = 15, 
-         experimentNum = 11, 
-         use_model = VamsiNN(),
+    main(num_epochs = 98, 
+         experimentNum = 12,
+         use_model = CNN(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
@@ -162,4 +162,4 @@ if __name__ == '__main__':
 # TESTED MODEL_9_E_20 with drawpy and got reasonable results. Seems to overfit when characters are written in messy handwriting
 
 # Experiment 11: Tried VamsiNN, worked with 98.8 val acc on 15th epoch
-# Experiment 12: Try a pad=0, stride all equals 1, only 2 fc layers, batch_norm FC_1 for 98 epochs; 
+# Experiment 12: Try a pad=0, stride all equals 1, only 2 fc layers, batch_norm FC_1 for 98 epochs, LR 0.0035
