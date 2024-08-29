@@ -10,17 +10,14 @@ import io
 import numpy as np
 import matplotlib.pyplot as plt
 
-import mss
-from bounding_box_cap import squareBB
-import cv2
-
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from train import transform, MNIST_transform
-from train import CNN13, VamsiNN, CNN14
+from train import CNN13, VamsiNN
 from dataloader import class_Labels_Length
+
 
 
 class Paint(object):
@@ -28,13 +25,14 @@ class Paint(object):
     DEFAULT_PEN_SIZE = 5.0
     DEFAULT_COLOR = 'black'
 
-    def __init__(self, model, model_folder, transform):
+    def __init__(self, model, model_folder, transform, ss_module):
         self.root = Tk()
         self.root.title("Paint Window")
         self.window_title = "Paint Window"
         self.model = model
         self.model_folder = model_folder
         self.transform = transform
+        self.module = ss_module
 
         self.pen_button = Button(self.root, text='pen', command=self.use_pen)
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
@@ -148,11 +146,7 @@ class Paint(object):
         self.root.destroy()
 
     def bounding_box(self, x, y, width, height, color):
-        self.c.create_line(x,y,x,y+height, fill="green", width=5)
-        self.c.create_line(x,y+height,x+width,y+height, fill="green", width=5)
-        self.c.create_line(x+width,y+height,x+width,y, fill="green", width=5)
-        self.c.create_line(x+width, y, x, y, fill="green", width=5)
-
+        self.c.create_rectangle(x, y, x+width, y+height, fill=color)
 
     def predict(self):
         # Hide the button grid
@@ -165,36 +159,14 @@ class Paint(object):
         self.root.update()  # Force update
         self.root.update_idletasks()  # Ensure all events are processed
 
-        left = self.c.winfo_rootx() # these are TOP LEFT
+        left = self.c.winfo_rootx()
         top = self.c.winfo_rooty()  
         width = self.c.winfo_width()
         height = self.c.winfo_height() 
-        
-        with mss.mss() as sct:
-            window = {"top": top, "left": left, "width": width, "height": height}
-            entire_ss = sct.grab(window) 
 
-            imageBGR = cv2.cvtColor(np.array(entire_ss), cv2.COLOR_BGRA2BGR) # np array and bgr for cv2
-            bbList = squareBB(imageBGR) # list of bounding boxes
-        
-        bb_ss_list = []
-        for box in bbList: 
-            # draws bounding boxes, COMMENT OUT FOR ANY DEMO
-            x, y, side = box[0], box[1], box[2]
-            self.bounding_box(x=x, y=y, width=side, height=side, color='green') # calls function
-    
-            with mss.mss() as sct: 
-                bb_window = {"top": y+side, "left": x, "width": side, "height": side} # opencv BOTTOM LEFT
-                bb_ss = sct.grab(bb_window)
-            bb_ss_list.append(bb_ss)
-        
-        print(bb_ss_list)
-
-        input_image = cv2.cvtColor(np.array(bb_ss_list[0]), cv2.COLOR_BGRA2BGR)
-        gray_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
-
-        plt.imshow(gray_image, cmap='gray')
-        plt.show()
+        bbox = (left, top, width, height)
+        img = self.module.screenshot(region=bbox) 
+        self.screenshot_img = img # PIL image is stored here
 
         # Show the button grid again
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='w')
@@ -203,49 +175,53 @@ class Paint(object):
         self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
         self.choose_size_button.grid(row=0, column=4, padx=5, pady=5, sticky='w')
 
-        self.run_inference(symList = bb_ss_list)
+        self.run_inference()
 
-    def run_inference(self, symList):
+    def run_inference(self):
+        '''
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        model = self.model
+        model = model.to(device)
+        model.load_state_dict(torch.load(self.model_folder, map_location=device, weights_only=True))
+        model.eval()'''
+
+        ss_img = self.screenshot_img.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
+        input_tensor = self.transform(ss_img)
         
-        for syms in symList: # these are mss screenshots
-            pil_image = Image.fromarray(np.array(syms))
-            ss_img = pil_image.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
-            input_tensor = self.transform(ss_img)
+        if isinstance(input_tensor, torch.Tensor):   
+            showIm = np.squeeze(input_tensor.numpy()) 
+            plt.imshow(showIm)
+            plt.show() 
 
-            if isinstance(input_tensor, torch.Tensor):   
-                showIm = np.squeeze(input_tensor.numpy()) 
-                plt.imshow(showIm) # THIS LINE IS FUCKED UP
-                plt.show() 
+            input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
+            torch.set_printoptions(threshold=1000, edgeitems=10)
+            print(f"Image tensor of size {input_tensor.size()}: {input_tensor}")
+            input_tensor = input_tensor.to(self.device)
+         
+        with torch.no_grad():
+            output = self.softmax(self.model(input_tensor))
+        
+        output = output.squeeze(0)  # Remove batch dimension
+        print(f"Amount of predictions: {output.shape}")
+        predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
+        predictions = list(predictions) 
+        
+        labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
+        classes = labels_df['Class_Names'].tolist()
 
-                input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
-                torch.set_printoptions(threshold=1000, edgeitems=10)
-                print(f"Image tensor of size {input_tensor.size()}: {input_tensor}")
-                input_tensor = input_tensor.to(self.device)
-            
-            with torch.no_grad():
-                output = self.softmax(self.model(input_tensor))
-            
-            output = output.squeeze(0)  # Remove batch dimension
-            print(f"Amount of predictions: {output.shape}")
-            predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
-            predictions = list(predictions) 
-            
-            labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
-            classes = labels_df['Class_Names'].tolist()
-
-            # classes = np.arange(10)
-            
-            max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
-            max_class_name = classes[max_index]
-            
-            plt.clf()
-            plt.bar(classes, predictions, color = 'skyblue')
-            plt.annotate(f'Highest: {max_class_name}',
-                xy=(max_index, predictions[max_index]),
-                xytext=(max_index, predictions[max_index] + 0.1),
-                arrowprops=dict(facecolor='red', edgecolor='red', arrowstyle='->', lw=1.5))
-            plt.show()
+        # classes = np.arange(10)
+        
+        max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
+        max_class_name = classes[max_index]
+        
+        plt.clf()
+        plt.bar(classes, predictions, color = 'skyblue')
+        plt.annotate(f'Highest: {max_class_name}',
+             xy=(max_index, predictions[max_index]),
+             xytext=(max_index, predictions[max_index] + 0.1),
+             arrowprops=dict(facecolor='red', edgecolor='red', arrowstyle='->', lw=1.5))
+        plt.show()
         
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN14(), model_folder='save_states/CNNmodel14Epoch100.pt', transform=transform)
+    paint_app = Paint(model=CNN13(), model_folder='save_states/CNNmodel13Epoch30.pt', transform=transform, ss_module=pyautogui)
