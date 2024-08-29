@@ -15,8 +15,10 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from train import transform, MNIST_transform
-from train import CNN, VamsiNN
+from train import CNN13, VamsiNN
 from dataloader import class_Labels_Length
+
+
 
 class Paint(object):
 
@@ -36,18 +38,20 @@ class Paint(object):
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
         self.clear_button = Button(self.root, text='clear', command=self.clear_canvas)
         self.predict_button = Button(self.root, text='predict', command=self.predict)
-        self.choose_size_button = Scale(self.root, from_=35, to=100, orient=HORIZONTAL)
+        self.choose_size_button = Scale(self.root, from_=5, to=50, orient=HORIZONTAL)
 
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
         self.clear_button.grid(row=0, column=2, padx=5, pady=5, sticky='w')
         self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
         self.choose_size_button.grid(row=0, column=4, padx=5, pady=5, sticky='w')
-
+        
+        # PYTORCH STUFF HERE
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.model = self.model.to(self.device)
         self.model.load_state_dict(torch.load(self.model_folder, map_location=self.device, weights_only=True))
         self.model.eval()
+        self.softmax = nn.Softmax(dim=1)
 
         # Canvas and output area
         self.c = Canvas(self.root, bg='white')
@@ -195,7 +199,7 @@ class Paint(object):
             input_tensor = input_tensor.to(self.device)
          
         with torch.no_grad():
-            output = self.model(input_tensor)    
+            output = self.softmax(self.model(input_tensor))
         
         output = output.squeeze(0)  # Remove batch dimension
         print(f"Amount of predictions: {output.shape}")
@@ -220,4 +224,4 @@ class Paint(object):
         
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN(), model_folder='save_states/CNNmodel12Epoch50.pt', transform=transform, ss_module=pyautogui)
+    paint_app = Paint(model=CNN13(), model_folder='save_states/CNNmodel13Epoch30.pt', transform=transform, ss_module=pyautogui)

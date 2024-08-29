@@ -19,7 +19,7 @@ from PIL import Image
 
 # ------------------------------------------------------------------------------------------------------------------
 # Define model
-from models import CNN, VamsiNN
+from models import CNN13, VamsiNN
 
 # transform and init data
 from dataloader import MathSymbolDataset
@@ -63,7 +63,7 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
     
     model = use_model
     criterion = nn.CrossEntropyLoss() # loss function
-    optimizer = optim.Adam(model.parameters(), lr = 0.0035)
+    optimizer = optim.Adam(model.parameters(), lr = 0.003)
     scheduler = StepLR(optimizer, step_size = 10, gamma = 0.8)
     accuracy = Accuracy(task='multiclass', num_classes=num_classes)
 
@@ -121,7 +121,7 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
 
         scheduler.step()
 
-        if (epoch+1) % 25 == 0:
+        if (epoch+1) % 10 == 0:
             torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
 
     torch.save(model.state_dict(), f'save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model\
@@ -145,9 +145,9 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
         print(f"TEST LOSS: {test_loss}")
 
 if __name__ == '__main__':
-    main(num_epochs = 98, 
-         experimentNum = 12,
-         use_model = CNN(),
+    main(num_epochs = 40, 
+         experimentNum = 13,
+         use_model = CNN13(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
@@ -182,4 +182,4 @@ if __name__ == '__main__':
 #                E50 has positive values with pen size 45 and drawing fill up the screen
 #                E75 is AWFUL, so is E98, keep going with E50 and change pen sizes
 
-# Experiment 13: Get rid of gray noise, 
+# Experiment 13: Get rid of gray noise, went back to three FC layers, with softmax is bad, LR 0.003, acc at 99.2 E30

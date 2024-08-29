@@ -1,9 +1,9 @@
 import torch
 import torch.nn as nn
 
-class CNN(nn.Module):
+class CNN13(nn.Module):
     def __init__(self):
-        super(CNN, self).__init__()
+        super(CNN13, self).__init__()
         # Size_out = [(size_in + 2*pad - kernel_size)/stride] floored + 1 
 
         self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=0, dilation=1) 
@@ -16,16 +16,15 @@ class CNN(nn.Module):
         self.batch_norm2 = nn.BatchNorm2d(64)
         self.batch_norm3 = nn.BatchNorm2d(128)
 
-        self.fc1 = nn.Linear(128 * 7 * 7, 256) 
-        self.fc2 = nn.Linear(256, 81)
+        self.fc1 = nn.Linear(128 * 7 * 7, 512) 
+        self.fc2 = nn.Linear(512, 256)
         self.fc3 = nn.Linear(256, 81)
-        self.batch_normFC = nn.BatchNorm1d(256)
-
+        self.batch_normFC = nn.BatchNorm1d(512)
         self.dropout = nn.Dropout(p=0.2)
 
         self.leaky_relu = nn.LeakyReLU(0.01)
         self.relu = nn.ReLU()
-        self.softmax = nn.Softmax() # DONT use this because there is already cross entropy loss (?)
+        self.softmax = nn.Softmax() 
         
 
     def forward(self, x):
@@ -34,7 +33,8 @@ class CNN(nn.Module):
         x = self.pool(self.leaky_relu(self.batch_norm3(self.conv3(x)))) # size = (16 + 0 - 3)/1 + 1 = 14 -> 7 after pool
         x = x.view(x.size(0), -1) # flattens the tensor into [batch_size x (128 * 7 * 7)]
         x = self.leaky_relu(self.batch_normFC(self.fc1(x)))
-        x = self.fc2(x)
+        x = self.leaky_relu(self.fc2(x))
+        x = self.fc3(x)
         return x
     
     
@@ -68,7 +68,7 @@ class VamsiNN(nn.Module):
 
 class CNN_9(nn.Module):
     def __init__(self):
-        super(CNN, self).__init__()
+        super(CNN_9, self).__init__()
         # Size_out = [(size_in + 2*pad - kernel_size)/stride] floored + 1 
 
         self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2, dilation=1) 
