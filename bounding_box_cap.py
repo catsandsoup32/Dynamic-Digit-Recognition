@@ -60,8 +60,6 @@ def squareBB(input_image):
 
 # squareBB()
 
-
-
 # get bounding box from opencv
 # input image is the ENTIRE TKINTER CANVAS
 

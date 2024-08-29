@@ -180,16 +180,17 @@ class Paint(object):
         bb_ss_list = []
         for box in bbList: 
             # draws bounding boxes, COMMENT OUT FOR ANY DEMO
-            x, y, side = box[0], box[1], box[2]
+            x = box[0]
+            y = box[1]
+            side = box[2]
             self.bounding_box(x=x, y=y, width=side, height=side, color='green') # calls function
-    
-            with mss.mss() as sct: 
-                bb_window = {"top": y+side, "left": x, "width": side, "height": side} # opencv BOTTOM LEFT
+
+            with mss.mss() as sct: # FIX THESE COORDINATES
+                bb_window = {"top": y, "left": x, "width": side, "height": side} # opencv BOTTOM LEFT
                 bb_ss = sct.grab(bb_window)
+                
             bb_ss_list.append(bb_ss)
         
-        print(bb_ss_list)
-
         input_image = cv2.cvtColor(np.array(bb_ss_list[0]), cv2.COLOR_BGRA2BGR)
         gray_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
 
@@ -214,19 +215,19 @@ class Paint(object):
 
             if isinstance(input_tensor, torch.Tensor):   
                 showIm = np.squeeze(input_tensor.numpy()) 
-                plt.imshow(showIm) # THIS LINE IS FUCKED UP
+                plt.imshow(showIm)
                 plt.show() 
 
                 input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
                 torch.set_printoptions(threshold=1000, edgeitems=10)
-                print(f"Image tensor of size {input_tensor.size()}: {input_tensor}")
+                #print(f"Image tensor of size {input_tensor.size()}: {input_tensor}")
                 input_tensor = input_tensor.to(self.device)
             
             with torch.no_grad():
                 output = self.softmax(self.model(input_tensor))
             
             output = output.squeeze(0)  # Remove batch dimension
-            print(f"Amount of predictions: {output.shape}")
+            #print(f"Amount of predictions: {output.shape}")
             predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
             predictions = list(predictions) 
             
@@ -248,4 +249,4 @@ class Paint(object):
         
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN14(), model_folder='save_states/CNNmodel14Epoch100.pt', transform=transform)
+    paint_app = Paint(model=CNN14(), model_folder='save_states/CNNmodel14Epoch90.pt', transform=transform)
