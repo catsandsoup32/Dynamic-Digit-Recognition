@@ -3,19 +3,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def detect_contours():
-    input_image = cv2.imread('opencv_bb_test_spis.png', 0)
+    input_image = cv2.imread('test_spis.png', 0)
     _, binarized = cv2.threshold(input_image, 128, 255, cv2.THRESH_BINARY)
 
-    contours_list, _ = cv2.findContours(binarized, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
+    contours_list, hierarchy = cv2.findContours(binarized, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
     # retrieval mode tree is for nested contours, chain_simple makes rectangles only four points
+
+    print(hierarchy) # [Next, Previous, First_Child, Parent]
 
     coordinatesList = []
     for idx, c in enumerate(contours_list[1: len(contours_list)]): # 0 is always the biggest one around entire image
         contour = c
         x,y,w,h = cv2.boundingRect(contour) # automatically gets rect from many values
-        
-
         cv2.rectangle(binarized, (x,y), (x+w, y+h), (0, 255, 0), 2)
+
+
+        # If it is overlapping, check if there is a y values are very similar
+        # If they are similar, then get rid of the smaller contour
+        # 
 
     print(coordinatesList)
     plt.imshow(binarized)
