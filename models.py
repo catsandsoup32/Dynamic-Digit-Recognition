@@ -1,6 +1,42 @@
 import torch
 import torch.nn as nn
 
+class CNN14(nn.Module):
+    def __init__(self):
+        super(CNN14, self).__init__()
+        # Size_out = [(size_in + 2*pad - kernel_size)/stride] floored + 1 
+
+        self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=0, dilation=1) 
+        self.conv2 = nn.Conv2d(32, 64, kernel_size=5, stride=1, padding=0, dilation=1) 
+        self.conv3 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=0, dilation=1) 
+    
+        self.pool = nn.MaxPool2d(kernel_size=2, stride=2) 
+
+        self.batch_norm1 = nn.BatchNorm2d(num_features=32) # C from (N, C, H, W) filter for more complex feature
+        self.batch_norm2 = nn.BatchNorm2d(64)
+        self.batch_norm3 = nn.BatchNorm2d(128)
+
+        self.fc1 = nn.Linear(128 * 7 * 7, 512) 
+        self.fc2 = nn.Linear(512, 256)
+        self.fc3 = nn.Linear(256, 81)
+        self.batch_normFC = nn.BatchNorm1d(512)
+        self.dropout = nn.Dropout(p=0.5)
+
+        self.leaky_relu = nn.LeakyReLU(0.01)
+        self.relu = nn.ReLU()
+        self.softmax = nn.Softmax() 
+        
+
+    def forward(self, x):
+        x = self.pool(self.leaky_relu(self.batch_norm1(self.conv1(x)))) # size = (45 + 0 - 5)/1 + 1 = 41 -> 20 after pool
+        x = self.leaky_relu(self.batch_norm2(self.conv2(x)))            # size = (20 + 0 - 5)/1 + 1 = 16
+        x = self.pool(self.leaky_relu(self.batch_norm3(self.conv3(x)))) # size = (16 + 0 - 3)/1 + 1 = 14 -> 7 after pool
+        x = x.view(x.size(0), -1) # flattens the tensor into [batch_size x (128 * 7 * 7)]
+        x = self.dropout(self.leaky_relu(self.batch_normFC(self.fc1(x))))
+        x = self.dropout(self.leaky_relu(self.fc2(x)))
+        x = self.fc3(x)
+        return x
+
 class CNN13(nn.Module):
     def __init__(self):
         super(CNN13, self).__init__()
