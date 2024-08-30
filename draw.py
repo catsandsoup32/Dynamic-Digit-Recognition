@@ -19,7 +19,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from train import transform, MNIST_transform
-from train import CNN13, VamsiNN, CNN14
+from models import CNN13, VamsiNN, CNN14, CNN_9
 from dataloader import class_Labels_Length
 
 
@@ -227,14 +227,11 @@ class Paint(object):
                 output = self.softmax(self.model(input_tensor))
             
             output = output.squeeze(0)  # Remove batch dimension
-            #print(f"Amount of predictions: {output.shape}")
             predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
             predictions = list(predictions) 
             
             labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
             classes = labels_df['Class_Names'].tolist()
-
-            # classes = np.arange(10)
             
             max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
             max_class_name = classes[max_index]
@@ -249,4 +246,7 @@ class Paint(object):
         
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN14(), model_folder='save_states/CNNmodel14Epoch90.pt', transform=transform)
+    paint_app = Paint(model=CNN_9(), model_folder='save_states/CNNmodel9Epoch20.pt', transform=transform)
+
+# CNN 9 actually seems to work the best ?? 
+# with pen size 5 when drawing small; pen size is important (could use image processing to scale down)

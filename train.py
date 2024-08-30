@@ -185,3 +185,8 @@ if __name__ == '__main__':
 # Experiment 13: Get rid of gray noise, went back to three FC layers, with softmax is confirmed bad, LR 0.003, acc at 99.2 E30
 # Experiment 14: Same as 13 but adjusted LR to 0.002 and add dropout for FC1 and FC2, dropout takes much longer to converge to 99.4 E100
 
+# THURSDAY NIGHT SANITY CHECK: 
+# Model 9 works best, continue working based on that architecture. 
+# ASAP, finalize the classes that will remain for further training. 
+# Make sure to babysit a few runs and adjust hyperparameters, 
+# or else an entire night of training could be wasted.
