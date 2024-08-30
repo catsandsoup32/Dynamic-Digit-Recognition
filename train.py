@@ -190,3 +190,13 @@ if __name__ == '__main__':
 # ASAP, finalize the classes that will remain for further training. 
 # Make sure to babysit a few runs and adjust hyperparameters, 
 # or else an entire night of training could be wasted.
+
+# So far, we will get rid of:
+# Ascii_124 useless, prime, times, neq, in, division, exists, !, geq, leq
+# KEEP tan, sin, log, etc. and just write in cursive 
+# SAVE ALL CLASSES, ORIGINAL 9TH MODEL before deleting classes
+# create synthetic dot for multiplication? or asterik.
+# Problem: we need a sign for multiplication, and also for decimal point
+# FOR DIVISION, JUST USE FORWARD SLASH 
+
+# In the future, can use GAN and also try convert to webapp for iPad demo
