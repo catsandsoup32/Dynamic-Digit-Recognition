@@ -23,7 +23,20 @@ for root, dirs, files in os.walk('bhmsds/symbols'):
             image.save(os.path.join('data/extracted_images_new/forward_slash', f'BHMSDS_slash_{counter}.jpg'))            
 '''      
 # deleted this forward slash bhmsds, still can use this function in case need to remove
-
+counter = -1
+for root, dirs, files in os.walk('data/extracted_images_new/forward_slash'):
+    for f in files:
+        counter += 1
+        file_path = os.path.join('data/extracted_images_new/forward_slash', f"BHMSDS_slash_{19500+counter}.jpg")
+        if file_path[40] == 'B':
+            print(file_path)
+            image = Image.open(file_path)
+            img = image.resize((45, 45))
+            img.save(os.path.join('data/extracted_images_new/forward_slash', f'BHMSDS_slash_{19500+counter}.jpg'))
+        #if file_path[15:20] == 'slash':
+            #image = Image.open(file_path)
+            #image.resize((45, 45))
+            #image.save(os.path.join('data/extracted_images_new/forward_slash', f'BHMSDS_slash_{counter}.jpg'))      
 
 
 
