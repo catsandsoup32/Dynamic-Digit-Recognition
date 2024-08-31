@@ -155,7 +155,7 @@ if __name__ == '__main__':
 # Duplicate of everything with NEW_ prefix, start with CNN_9 and adjust
 
 # Experiment 15: 0.0035 LR from 0.003, same as CNN_9 but just increase LR
-# Epoch 40- Train loss: 0.06470691475075424 train acc: 98.91757202148438, val loss: 0.09432324577125029, val acc: 98.84830474853516
+# Epoch 40 - Train loss: 0.06470691475075424 train acc: 98.91757202148438, val loss: 0.09432324577125029, val acc: 98.84830474853516
 
 # Experiment 16, changed test and train seed to 21, dropout last FC layer, learning rate to 0.0025
 # peaked at 97.4 percent acc
