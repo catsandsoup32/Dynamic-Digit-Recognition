@@ -28,8 +28,8 @@ def class_Labels_Length(folder_name):
         class_length_list.append(len(os.listdir(class_path)))
         totalLen += len(os.listdir(class_path))
     df.insert(1, "Length of Class", class_length_list, allow_duplicates=True)        
-    print(f"Total Examples: {totalLen}\n")       
-    print(df.to_string())
+    #print(f"Total Examples: {totalLen}\n")       
+    #print(df.to_string())
     return df
 
 #df = class_Labels_Length('data/extracted_images_new') 

@@ -9,7 +9,7 @@ def check_intersect():
 def squareBB(input_image):
     # input_image = cv2.imread(input_image)
     height, width = input_image.shape[0], input_image.shape[1]
-    print(f"Image dimensions: {height} (height) x {width} (width)")
+    #print(f"Image dimensions: {height} (height) x {width} (width)")
     gray_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
     _, binarized = cv2.threshold(gray_image, 128, 255, cv2.THRESH_BINARY)
 
@@ -17,7 +17,7 @@ def squareBB(input_image):
     # retrieval mode tree is for nested contours, chain_simple makes rectangles only four points
     # FOR SOME REASON retr_list doesnt detect some symbols ... 
 
-    print(f"hierarchy: {hierarchy}")
+    #print(f"hierarchy: {hierarchy}")
 
     squareList = [] 
     hLineList = [] # Contains indexes of the minus signs before bb turns into square

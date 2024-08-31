@@ -3,9 +3,9 @@ import torch.nn as nn
 
 # 72 classes
 
-class CNN_15(nn.Module):
+class CNN_16(nn.Module):
     def __init__(self):
-        super(CNN_15, self).__init__()
+        super(CNN_16, self).__init__()
         # Size_out = [(size_in + 2*pad - kernel_size)/stride] floored + 1 
 
         self.conv1 = nn.Conv2d(1, 32, kernel_size=5, stride=1, padding=2, dilation=1) 
@@ -32,7 +32,7 @@ class CNN_15(nn.Module):
         x = self.pool(self.leaky_relu(self.batch_norm3(self.conv3(x)))) # size = (22 + 2 - 3)/1 + 1 = 22 -> 11 after pool
         x = x.view(x.size(0), -1) # flattens the tensor into [batch_size x (128 * 11 * 11)]
         x = self.leaky_relu(self.fc1(x))
-        x = self.leaky_relu(self.fc2(x))
+        x = self.leaky_relu(self.dropout(self.fc2(x)))
         x = self.fc3(x)
         return x
 
