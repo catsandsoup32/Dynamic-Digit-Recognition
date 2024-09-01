@@ -19,10 +19,10 @@ from PIL import Image
 
 # ------------------------------------------------------------------------------------------------------------------
 # Define model
-from models import CNN13, CNN14, VamsiNN
+from archives_81class.models import CNN13, CNN14, VamsiNN
 
 # transform and init data
-from dataloader import MathSymbolDataset
+from archives_81class.dataloader import MathSymbolDataset
 
 transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),  # Convert to grayscale

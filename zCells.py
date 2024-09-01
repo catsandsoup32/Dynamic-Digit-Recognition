@@ -1,4 +1,4 @@
-from tkinter import Tk, Canvas, Button, Scale, HORIZONTAL, RAISED, SUNKEN, ROUND, TRUE # dont use wildcard import
+from tkinter import Tk, Canvas, Button, Scale, HORIZONTAL, RAISED, SUNKEN, ROUND, TRUE, Frame # dont use wildcard import
 from tkinter.colorchooser import askcolor
 import threading
 
@@ -18,9 +18,9 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
-from train import transform, MNIST_transform
-from models import CNN13, VamsiNN, CNN14, CNN_9
-from dataloader import class_Labels_Length
+from NEW_train import transform
+from NEW_models import CNN_9, CNN_16
+from NEW_dataloader import class_Labels_Length
 
 
 class Paint(object):
@@ -40,7 +40,7 @@ class Paint(object):
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
         self.clear_button = Button(self.root, text='clear', command=self.clear_canvas)
         self.predict_button = Button(self.root, text='predict', command=self.predict)
-        self.choose_size_button = Scale(self.root, from_=5, to=50, orient=HORIZONTAL)
+        self.choose_size_button = Scale(self.root, from_=1, to=50, orient=HORIZONTAL)
 
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
@@ -56,11 +56,13 @@ class Paint(object):
         self.softmax = nn.Softmax(dim=1)
 
         # Canvas and output area
-        self.c = Canvas(self.root, bg='white')
+        self.f = Frame(self.root, bg='#9CAF88')
         self.output_frame = Canvas(self.root, bg='lightgrey')  # Placeholder for output area
-
+        self.canvasDict = {}
+        self.CC = None # current canvas
+        
         # Arrange canvas and output area in a 2-column layout
-        self.c.grid(row=1, column=0, sticky='nsew', padx=0, pady=0)
+        self.f.grid(row=1, column=0, sticky='nsew', padx=0, pady=0)
         self.output_frame.grid(row=1, column=1, sticky='nsew', padx=0, pady=0)
         
         # Configure grid to adjust sizes
@@ -69,10 +71,11 @@ class Paint(object):
         self.root.grid_columnconfigure(1, weight=1)
 
         self.root.attributes('-fullscreen', True)  # Fullscreen mode
-        self.setup()
+        self.root.after(100, self.setup)
         self.root.bind("<Escape>", self.exit_fullscreen)  # Bind Escape to exit fullscreen
         self.root.bind('<Control-z>', self.undo)
         self.root.bind('<Q>', self.close_window)
+        self.root.bind("<Button-1>", self.getCC) 
         self.root.after(100, self.print_window_size)
         self.root.mainloop()
 
@@ -83,11 +86,23 @@ class Paint(object):
         self.color = self.DEFAULT_COLOR
         self.eraser_on = False
         self.active_button = self.pen_button
-        self.c.bind('<B1-Motion>', self.paint)
-        self.c.bind('<ButtonRelease-1>', self.reset)
-
         self.objects = []
         self.screenshot_img = None
+        frameW, frameH = self.f.winfo_width(), self.f.winfo_height()
+        for i in range(5):
+            canvas = Canvas(self.f, bg='white', width=frameW+425, height=frameH//5.2)  
+            canvas.bind('<B1-Motion>', self.paint)
+            canvas.bind('<ButtonRelease-1>', self.reset)
+            canvas.grid(row=i, column=0, padx=5, pady=5, sticky='nsew')
+            self.canvasDict[i] = canvas
+        self.CC = self.canvasDict[0]
+        
+        print(f"canvasDict: {self.canvasDict}")
+
+    def getCC(self, event):
+        cc = event.widget
+        if isinstance(cc, Canvas):
+            self.CC = cc
 
     def exit_fullscreen(self, event=None):
         self.root.attributes('-fullscreen', False)
@@ -110,14 +125,14 @@ class Paint(object):
         self.eraser_on = eraser_mode
 
     def clear_canvas(self):
-        self.c.delete("all")
-        self.objects.clear()  
+        self.CC.delete('all')
+        self.objects.clear()
         
     def paint(self, event):
         self.line_width = self.choose_size_button.get()
         paint_color = "white" if self.eraser_on else (self.color if self.color else self.DEFAULT_COLOR)  
         if self.old_x and self.old_y:
-            obj_id = self.c.create_line(self.old_x, self.old_y, event.x, event.y,
+            obj_id = self.CC.create_line(self.old_x, self.old_y, event.x, event.y,
                                width=self.line_width, fill=paint_color,
                                capstyle=ROUND, smooth=TRUE, splinesteps=36)
             self.objects.append(obj_id)  # Store the object's ID for undo
@@ -132,7 +147,7 @@ class Paint(object):
             # Remove the last object added to the canvas
             last_object = self.objects[max(0,len(self.objects)-50):len(self.objects)]
             for item in last_object:
-                self.c.delete(item)
+                self.CC.delete(item)
             self.objects = self.objects[0: len(self.objects)-50]
 
     def get_window_size(self):
@@ -148,11 +163,10 @@ class Paint(object):
         self.root.destroy()
 
     def bounding_box(self, x, y, width, height, color):
-        self.c.create_line(x,y,x,y+height, fill="green", width=5)
-        self.c.create_line(x,y+height,x+width,y+height, fill="green", width=5)
-        self.c.create_line(x+width,y+height,x+width,y, fill="green", width=5)
-        self.c.create_line(x+width, y, x, y, fill="green", width=5)
-
+        self.CC.create_line(x,y,x,y+height, fill="green", width=5)
+        self.CC.create_line(x,y+height,x+width,y+height, fill="green", width=5)
+        self.CC.create_line(x+width,y+height,x+width,y, fill="green", width=5)
+        self.CC.create_line(x+width, y, x, y, fill="green", width=5)
 
     def predict(self):
         # Hide the button grid
@@ -165,10 +179,12 @@ class Paint(object):
         self.root.update()  # Force update
         self.root.update_idletasks()  # Ensure all events are processed
 
-        left = self.c.winfo_rootx() # these are TOP LEFT
-        top = self.c.winfo_rooty()  
-        width = self.c.winfo_width()
-        height = self.c.winfo_height() 
+        left = self.CC.winfo_rootx() # these are TOP LEFT
+        top = self.CC.winfo_rooty()  
+        width = self.CC.winfo_width()
+        height = self.CC.winfo_height() 
+
+        # HAVE TO FIX THIS SS
         
         with mss.mss() as sct:
             window = {"top": top, "left": left, "width": width, "height": height}
@@ -185,7 +201,7 @@ class Paint(object):
             side = box[2]
             self.bounding_box(x=x, y=y, width=side, height=side, color='green') # calls function
 
-            with mss.mss() as sct: # FIX THESE COORDINATES
+            with mss.mss() as sct: 
                 bb_window = {"top": y, "left": x, "width": side, "height": side} # opencv BOTTOM LEFT
                 bb_ss = sct.grab(bb_window)
                 
@@ -230,7 +246,7 @@ class Paint(object):
             predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
             predictions = list(predictions) 
             
-            labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
+            labels_df = class_Labels_Length('data/extracted_images_new') # imported from dataloader
             classes = labels_df['Class_Names'].tolist()
             
             max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
@@ -246,7 +262,5 @@ class Paint(object):
         
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_9(), model_folder='save_states/CNNmodel9Epoch20.pt', transform=transform)
+    paint_app = Paint(model=CNN_16(), model_folder='NEW_save_states/CNNmodel18Epoch70.pt', transform=transform)
 
-# CNN 9 actually seems to work the best ?? 
-# with pen size 5 when drawing small; pen size is important (could use image processing to scale down)

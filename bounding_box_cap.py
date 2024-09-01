@@ -2,119 +2,93 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-def check_intersect():
-    pass
-    # generalize to H and V lines
+x_margin = 20
 
 def squareBB(input_image):
-    # input_image = cv2.imread(input_image)
+    #input_image = cv2.imread(input_image) # comment this out when using draw.py
     height, width = input_image.shape[0], input_image.shape[1]
-    #print(f"Image dimensions: {height} (height) x {width} (width)")
+    print(f"Image dimensions: {height} (height) x {width} (width)")
     gray_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
     _, binarized = cv2.threshold(gray_image, 128, 255, cv2.THRESH_BINARY)
 
     contours_list, hierarchy = cv2.findContours(binarized, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE) 
     # retrieval mode tree is for nested contours, chain_simple makes rectangles only four points
-    # FOR SOME REASON retr_list doesnt detect some symbols ... 
-
-    #print(f"hierarchy: {hierarchy}")
 
     squareList = [] 
     hLineList = [] # Contains indexes of the minus signs before bb turns into square
-    for idx, contour in enumerate(contours_list): # 0 is always the biggest box (entire image)
-        x,y,w,h = cv2.boundingRect(contour) # automatically gets rect from many values
-        # x and y are bottom left
-
-        if h < 30: # window height / 56? So it scales to the canvas 
-            hLineList.append(idx)
+    dotList = []
+    for idx, contour in enumerate(contours_list): 
+        x,y,w,h = cv2.boundingRect(contour) # automatically gets rect from many values (x, y) bottom left corner
+        if h < 30:
+            if w > h*2: 
+                hLineList.append(idx) # for minuses
+            else: 
+                dotList.append(idx)
+                
         s = max(w, h) # SQUARE SIDE LENGTH
-
         # centering
         y = y - (w-h)//2 if s == w else y # if width is longer
         x = x - (h-w)//2 if s == h else x   # if height is longer
-        squareList.append((x,y,s))
-        # cv2.rectangle(binarized, (x,y), (x+s, y+s), (0, 255, 0), 2) # change this later to draw only selected squares
+        squareList.append([x,y,s,idx])
 
-    # RIGHT NOW, getting rid of near-complete overlaps 
-    # for holes in numbers
-    # Might have to do horizontal and v line logic first
+    # THIS FIXES HOLES
+    for idx, squareCoord in enumerate(squareList): 
+        if hierarchy[0][idx][3] == 0: 
+            pass
+        else: 
+            squareCoord[3] = None
     
-    finalSquareList = []
-    margin = width/20
+    # check minuses against each other to fix equals signs
+    if len(hLineList) >= 2:
+        for minusIdx in hLineList:
+            x1, y1 = squareList[minusIdx][0], squareList[minusIdx][1]
+            outBreak = False
+            for minusIdx2 in hLineList:
+                x2, y2 = squareList[minusIdx2][0], squareList[minusIdx2][1]
+                if minusIdx != minusIdx2 and abs(x1-x2) < x_margin:
+                    for values in squareList:
+                        values[1] = (y1+y2)//2 if values[3] == minusIdx else values[1] 
+                        values[3] = None if values[3] == minusIdx2 else values[3]                  
+                    outBreak = True
+                    break
+            if outBreak:
+                break
 
-    for idx, squareCoord in enumerate(squareList): # DONT DELETE THIS THING pls
-        if hierarchy[0][idx][3] == 0:
-            finalSquareList.append(squareCoord)
-    
-    ''' [[[-1 -1  1 -1]
-        [ 4 -1  2  0]
-        [ 3 -1 -1  1]
-        [-1  2 -1  1]
-        [-1  1  5  0]
-        [ 6 -1 -1  4]
-        [-1  5 -1  4]]]'''
-
-
-    '''
-    for kingIdx, squareCoord in enumerate(squareList): 
-        xH, yH, sH = squareCoord[0], squareCoord[1], squareCoord[2]
-        x2H, y2H = xH + sH, yH - sH 
-        print(f"h-coords: {xH, yH, sH}")
-        unionAreasList = []
-        for peasantIdx, otherSquare in enumerate(squareList): # checks against every other bb
-            if kingIdx != peasantIdx:
-                xC, yC, sC = otherSquare[0], otherSquare[1], otherSquare[2] # bottom left (x, y), and side length
-                x2C, y2C = xC + sC, yC - sC
-
-                if xH > (xC - margin) and yH < (yC + margin) and (xH + sH) < (xC + sC + margin) and (yH - sH) > (yC - sC - margin):
-                    
-                    # gets the union
-                    xU = max(xH, xC)
-                    yU = min(yH, yC)
-                    x2U = min(xH + sH, xC + sC)
-                    y2U = max(yH - sH, yC - sC)
-
-                    wU = x2U - xU
-                    hU = yU - y2U
-
-                #print(wU, hU)
-                #unionAreasList.append(hU * wU)
-        '''
-        
+    # combines i's, j's, etc. and also crops dots
+    for dotIdx in dotList:
+        x, y, s = squareList[dotIdx][0], squareList[dotIdx][1], squareList[dotIdx][2]
+        trueDot = True
+        for squares in squareList:
+            if squares[3] != dotIdx and abs(squares[0] + squares[2]//2 - x) < x_margin and squares[3] != None:
+                x0, y0, s0 = squares[0], squares[1], squares[2]
+                d = squares[1] - y
+                squares[2] = s0 + d
+                squares[0] = x0 - d//2
+                squares[1] = y0 - d
+                squareList[dotIdx][3] = None
+                trueDot = False
+                break
             
+        #if trueDot:
+            #centerX = x + s//2
+            #centerY = y - s//2
+            #squareList[dotIdx][0], squareList[dotIdx][1], squareList[dotIdx][2] = centerX-5, centerY+5, 10
+ 
 
+    finalSquareList = []
+    for squares in squareList:
+        if squares[3] is not None:
+            finalSquareList.append(squares)
+    
     for squares in finalSquareList:
         cv2.rectangle(binarized, (squares[0],squares[1]), (squares[0]+squares[2], squares[1]+squares[2]), (0, 255, 0), 2) 
 
-        
-    # check ONLY MINUSES with everything else
-    for index in hLineList: # hLineList contains the INDEXES of SQUARELIST that are minuses
-        minusCoords = squareList[index]
-        
-        leftIntersect = False
-        rightIntersect = False
-        topIntersect = False
-        downIntersect = False
-
-        for squareIdx, square in enumerate(squareList): 
-            if index != squareIdx: # so it doesn't check itself
-                # check if intersects
-                if (square[0] + square[2]) - minusCoords[0] > 0 and (square[0] + square[2]) - minusCoords[0] < 20:
-                    pass
-                
-    # Check for similar X values above and below. 
-    # If none, then it is a minus sign
-    # If it overlaps, get rid of it    
-    # If it detects one other small area, then these two become an equal sign
-    # If it detects two big areas, then it is a division sign
-
-    plt.imshow(binarized)
-    plt.show()
+    #plt.imshow(binarized)
+    #plt.show()
 
     return finalSquareList
  
-
-# squareBB('rect_test3.png')
+#squareBB('dot2.png')
 
 
 

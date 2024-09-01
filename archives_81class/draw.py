@@ -18,9 +18,9 @@ import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
-from NEW_train import transform
-from NEW_models import CNN_9, CNN_16
-from NEW_dataloader import class_Labels_Length
+from archives_81class.train import transform, MNIST_transform
+from archives_81class.models import CNN13, VamsiNN, CNN14, CNN_9
+from archives_81class.dataloader import class_Labels_Length
 
 
 class Paint(object):
@@ -40,7 +40,7 @@ class Paint(object):
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
         self.clear_button = Button(self.root, text='clear', command=self.clear_canvas)
         self.predict_button = Button(self.root, text='predict', command=self.predict)
-        self.choose_size_button = Scale(self.root, from_=1, to=50, orient=HORIZONTAL)
+        self.choose_size_button = Scale(self.root, from_=5, to=50, orient=HORIZONTAL)
 
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='w')
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
@@ -230,7 +230,7 @@ class Paint(object):
             predictions = output.cpu().detach().numpy() if torch.cuda.is_available() else output
             predictions = list(predictions) 
             
-            labels_df = class_Labels_Length('data/extracted_images_new') # imported from dataloader
+            labels_df = class_Labels_Length('data/extracted_images') # imported from dataloader
             classes = labels_df['Class_Names'].tolist()
             
             max_index = predictions.index(max(predictions))  # Get the index of the highest prediction
@@ -246,5 +246,7 @@ class Paint(object):
         
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_16(), model_folder='NEW_save_states/CNNmodel18Epoch70.pt', transform=transform)
+    paint_app = Paint(model=CNN_9(), model_folder='save_states/CNNmodel9Epoch20.pt', transform=transform)
 
+# CNN 9 actually seems to work the best ?? 
+# with pen size 5 when drawing small; pen size is important (could use image processing to scale down)
