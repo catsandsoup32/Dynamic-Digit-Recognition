@@ -6,8 +6,8 @@ x_margin = 20
 
 def squareBB(input_image):
     #input_image = cv2.imread(input_image) # comment this out when using draw.py
-    height, width = input_image.shape[0], input_image.shape[1]
-    print(f"Image dimensions: {height} (height) x {width} (width)")
+    #height, width = input_image.shape[0], input_image.shape[1]
+    #print(f"Image dimensions: {height} (height) x {width} (width)")
     gray_image = cv2.cvtColor(input_image, cv2.COLOR_BGR2GRAY)
     _, binarized = cv2.threshold(gray_image, 128, 255, cv2.THRESH_BINARY)
 
@@ -76,19 +76,32 @@ def squareBB(input_image):
  
 
     finalSquareList = []
+    xCoordList = []
     for squares in squareList:
-        if squares[3] is not None:
-            finalSquareList.append(squares)
+        if squares[3] is not None:  # gets all valid bounding boxes
+            finalSquareList.append(squares)  
+            xCoordList.append(squares[0])
     
-    for squares in finalSquareList:
+    xCoordList.sort()
+    sortedFinalSquareList = []
+    insertIdx = 0
+
+    while insertIdx < len(finalSquareList):
+        for squares in finalSquareList:
+            if squares[0] == xCoordList[insertIdx]:
+                sortedFinalSquareList.append(squares)
+                insertIdx += 1
+                break
+
+    for squares in sortedFinalSquareList:
         cv2.rectangle(binarized, (squares[0],squares[1]), (squares[0]+squares[2], squares[1]+squares[2]), (0, 255, 0), 2) 
 
     #plt.imshow(binarized)
     #plt.show()
 
-    return finalSquareList
+    return sortedFinalSquareList
  
-#squareBB('dot2.png')
+#squareBB('ordering_test.png')
 
 
 
