@@ -118,11 +118,11 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
 
     torch.save(model.state_dict(), f'NEW_save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model
 
-    plt.plot(np.arange(num_epochs), list(train_losses))
-    plt.xlabel('Epochs')
-    plt.ylabel('Loss')
-    plt.title('Loss over time')
-    plt.show()
+    #plt.plot(np.arange(num_epochs), list(train_losses))
+    #plt.xlabel('Epochs')
+    #plt.ylabel('Loss')
+    #plt.title('Loss over time')
+    #plt.show()
 
     if test_loop:
         model.eval()
@@ -137,16 +137,16 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
         print(f"TEST LOSS: {test_loss}")
 
 if __name__ == '__main__':
-    main(num_epochs = 40, 
-         experimentNum = 20,
-         use_model = CNN_19(),
+    main(num_epochs = 120, 
+         experimentNum = 21,
+         use_model = CNN_9(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
          num_classes = 72,
          loadFromSaved = None,
-         test_loop = True,
-         LR = 0.00065)
+         test_loop = False,
+         LR = 0.001)
 
 
 # Duplicate of everything with NEW_ prefix, start with CNN_9 and adjust
@@ -192,4 +192,6 @@ Epoch 95/120 - Train loss: 0.7169919920367526 train acc: 81.83191680908203, val 
 '''
 
 # Experiment 20, same as before but 0.00065
+
+# Experiment 21: try CNN_9 with 0.004 LR - E15 99.5 and E50 99.9
  
