@@ -244,10 +244,10 @@ class Paint(object):
             input_tensor = self.transform(ss_img)
 
             if isinstance(input_tensor, torch.Tensor):   
-                showIm = np.squeeze(input_tensor.numpy()) 
-                plt.clf()
-                plt.imshow(showIm)
-                plt.show() 
+                #showIm = np.squeeze(input_tensor.numpy()) 
+                #plt.clf()
+                #plt.imshow(showIm)
+                #plt.show() 
                 
                 input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
                 torch.set_printoptions(threshold=1000, edgeitems=10)
@@ -285,6 +285,11 @@ class Paint(object):
                 self.createLabel(label_text=annotateText, x=createLabelX, y=createLabelY, size=cl_side)
 
         print(f"sympyList: {sympyList}")
+        if '=' in sympyList:
+            print("Yup")
+        else:
+            pass
+
         expression = ""
         for sym in sympyList:
             expression = f"{expression}{sym}"
@@ -292,15 +297,16 @@ class Paint(object):
         print(f"expression: {expression}")
 
     def createLabel(self, label_text, x, y, size):
-        label = Label(self.CC, text = label_text, font=("Courier", size//10))
+        label = Label(self.CC, text = label_text, font=("Courier", max(size, 100)//10))
         label.place(x=x, y=y)
         self.labelList.append(label)     
 
         
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_19(), model_folder='NEW_save_states/CNNmodel19Epoch30.pt', transform=transform)
+    paint_app = Paint(model=CNN_19(), model_folder='NEW_save_states/CNNmodel15Epoch40.pt', transform=transform)
 
-# 19 30 is actually pretty good, NO log, YES dot, yes i and j
+# exp 19 30 is actually pretty good, NO log, YES dot, yes i and j
 # 30 IS MUCH BETTER WITH NUMBERS
 # 50 still no trig, YES 's', 8 doesnt work????
 
+# Model 15 epoch 40 still works the best, with pen size 4
