@@ -300,7 +300,7 @@ class Paint(object):
 if __name__ == '__main__':
     paint_app = Paint(model=CNN_19(), model_folder='NEW_save_states/CNNmodel19Epoch30.pt', transform=transform)
 
-# 30 is actually pretty good, NO log, YES dot, yes i and j
+# 19 30 is actually pretty good, NO log, YES dot, yes i and j
 # 30 IS MUCH BETTER WITH NUMBERS
 # 50 still no trig, YES 's', 8 doesnt work????
 

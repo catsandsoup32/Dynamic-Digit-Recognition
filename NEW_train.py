@@ -43,7 +43,7 @@ test_dataset = MathSymbolDataset(data_dir='data/extracted_images_new', mode = 't
 # Train and val loops
 def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_val, use_dataset_test, num_classes, loadFromSaved, test_loop, LR):
 
-    train_loader = DataLoader(use_dataset_train, batch_size=32, shuffle=True, num_workers=6) # num_workers must be with if name
+    train_loader = DataLoader(use_dataset_train, batch_size=32, shuffle=True, num_workers=5) # num_workers must be with if name
     val_loader = DataLoader(use_dataset_val, batch_size=32, shuffle=False, num_workers=1)
     test_loader = DataLoader(use_dataset_test, batch_size=32, shuffle=False, num_workers=1)
 
@@ -112,9 +112,8 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
     
 
         scheduler.step()
-
+        print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss} train acc: {train_acc}, val loss: {val_loss}, val acc: {val_acc}")
         if (epoch+1) % 5 == 0:
-            print(f"Epoch {epoch+1}/{num_epochs} - Train loss: {train_loss} train acc: {train_acc}, val loss: {val_loss}, val acc: {val_acc}")
             torch.save(model.state_dict(), f'NEW_save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model
 
     torch.save(model.state_dict(), f'NEW_save_states/CNNmodel{experimentNum}Epoch{epoch+1}.pt')  # Save the trained model
@@ -138,8 +137,8 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
         print(f"TEST LOSS: {test_loss}")
 
 if __name__ == '__main__':
-    main(num_epochs = 120, 
-         experimentNum = 19,
+    main(num_epochs = 40, 
+         experimentNum = 20,
          use_model = CNN_19(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
@@ -147,7 +146,7 @@ if __name__ == '__main__':
          num_classes = 72,
          loadFromSaved = None,
          test_loop = True,
-         LR = 0.001)
+         LR = 0.00065)
 
 
 # Duplicate of everything with NEW_ prefix, start with CNN_9 and adjust
@@ -176,31 +175,21 @@ Epoch 115/120 - Train loss: 1.7967954847319871 train acc: 54.458065032958984, va
 '''
 
 Epoch 30/120 - Train loss: 0.7287063268148788 train acc: 81.57711791992188, val loss: 0.05057302341744006, val acc: 99.50592803955078
-
 Epoch 35/120 - Train loss: 0.7279050249070843 train acc: 81.57559967041016, val loss: 0.03539760755252864, val acc: 99.68312072753906
-
 Epoch 40/120 - Train loss: 0.7237641023978696 train acc: 81.68766784667969, val loss: 0.03161045874095144, val acc: 99.67630004882812
-
 Epoch 45/120 - Train loss: 0.7296620580585721 train acc: 81.5377426147461, val loss: 0.03091347342870148, val acc: 99.71378326416016
-
 Epoch 50/120 - Train loss: 0.7264944429452854 train acc: 81.63693237304688, val loss: 0.03346620736630914, val acc: 99.79215240478516
-
 Epoch 55/120 - Train loss: 0.7186999298934525 train acc: 81.79480743408203, val loss: 0.04076681457441326, val acc: 99.72740936279297
-
 Epoch 60/120 - Train loss: 0.715689688275313 train acc: 81.84744262695312, val loss: 0.0389006942676502, val acc: 99.80237579345703
-
 Epoch 65/120 - Train loss: 0.7169407898613114 train acc: 81.83721923828125, val loss: 0.04162650536637014, val acc: 99.85689544677734
-
 Epoch 70/120 - Train loss: 0.7153182888034828 train acc: 81.88302612304688, val loss: 0.03755194554882695, val acc: 99.87052154541016
-
 Epoch 75/120 - Train loss: 0.7157957389279817 train acc: 81.86940002441406, val loss: 0.04080612302126411, val acc: 99.8500747680664
-
 Epoch 80/120 - Train loss: 0.7129357677567598 train acc: 81.95306396484375, val loss: 0.03691062001210219, val acc: 99.85348510742188
-
 Epoch 85/120 - Train loss: 0.7194462625906937 train acc: 81.78194427490234, val loss: 0.024935387839693044, val acc: 99.90459442138672
-
 Epoch 90/120 - Train loss: 0.716269019311232 train acc: 81.86637115478516, val loss: 0.034998249082753445, val acc: 99.90800476074219
-
 Epoch 95/120 - Train loss: 0.7169919920367526 train acc: 81.83191680908203, val loss: 0.034656451603172635, val acc: 99.91822814941406
 
 '''
+
+# Experiment 20, same as before but 0.00065
+ 
