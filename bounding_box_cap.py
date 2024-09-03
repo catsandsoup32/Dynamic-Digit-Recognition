@@ -77,21 +77,30 @@ def squareBB(input_image):
 
     finalSquareList = []
     xCoordList = []
+    sideList = []
     for squares in squareList:
         if squares[3] is not None:  # gets all valid bounding boxes
             finalSquareList.append(squares)  
             xCoordList.append(squares[0])
+            sideList.append(squares[2])
     
+    sideList.sort()
+    for squares in finalSquareList: # gets square with largest side
+        if squares[2] == sideList[-1]:
+            largestSquare = squares
+            break
+            
     xCoordList.sort()
     sortedFinalSquareList = []
     insertIdx = 0
 
     while insertIdx < len(finalSquareList):
         for squares in finalSquareList:
-            if squares[0] == xCoordList[insertIdx]:
+            if squares[0] == xCoordList[insertIdx]: 
                 sortedFinalSquareList.append(squares)
                 insertIdx += 1
                 break
+            
 
     for squares in sortedFinalSquareList:
         cv2.rectangle(binarized, (squares[0],squares[1]), (squares[0]+squares[2], squares[1]+squares[2]), (0, 255, 0), 2) 
@@ -99,7 +108,7 @@ def squareBB(input_image):
     #plt.imshow(binarized)
     #plt.show()
 
-    return sortedFinalSquareList
+    return (sortedFinalSquareList, largestSquare)
  
 #squareBB('ordering_test.png')
 

@@ -101,6 +101,7 @@ class CNN_9(nn.Module):
         x = self.fc3(x)
         return x
 
+# maybe overparameterized, can drop some layers
 
 
         

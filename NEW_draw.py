@@ -16,6 +16,7 @@ import cv2
 
 import sympy
 from sympy import *
+from toSympy import list_to_sympy
 
 import torch
 import torch.nn as nn
@@ -201,8 +202,9 @@ class Paint(object):
             }
             entire_ss = sct.grab(canvas_window) 
 
-            imageBGR = cv2.cvtColor(np.array(entire_ss), cv2.COLOR_BGRA2BGR) # np array and bgr for cv2
-            bbList = squareBB(imageBGR) # list of bounding boxes FROM OPENCV
+        imageBGR = cv2.cvtColor(np.array(entire_ss), cv2.COLOR_BGRA2BGR) # np array and bgr for cv2
+        bbList = squareBB(imageBGR)[0] # list of bounding boxes FROM OPENCV
+        largestSquare = squareBB(imageBGR)[1]
         
         bb_ss_list = []
         canvasIdx = f"{self.CC}"[-1]
@@ -214,17 +216,24 @@ class Paint(object):
             x = box[0]
             y = box[1]
             side = box[2]
+            centerY = y + side//2
             if self.dev:
                 self.bounding_box(x=x, y=y, width=side, height=side, color='green') # based on current canvas so y scales
 
             with mss.mss() as sct: 
                 # NOTE_ mssScaler is needed for bug fix
-                bb_window = {"top": y + mssScaler, "left": x, "width": side, "height": side} # opencv BOTTOM LEFT
+                bb_window = {"top": y + mssScaler, "left": x, "width": side, "height": side} # y is top
                 bb_ss = sct.grab(bb_window)
-                
-            bb_ss_list.append(bb_ss)
-            labelPosList.append((x, y-30, side))
 
+            if centerY < int(0.9 * largestSquare[1]):
+                bb_ss_list.append((bb_ss, '^'))
+            elif centerY > int(0.9 * (largestSquare[1] + largestSquare[2])):
+                bb_ss_list.append((bb_ss, '_'))
+            else:
+                bb_ss_list.append([bb_ss])
+
+            labelPosList.append((x, y-30, side)) 
+            
         # Show the button grid again
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='e')
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
@@ -236,10 +245,10 @@ class Paint(object):
         self.run_inference(symList=bb_ss_list, labelPosList=labelPosList)
 
     def run_inference(self, symList, labelPosList):
-        
+
         sympyList = []
         for idx, syms in enumerate(symList): # these are mss screenshots
-            pil_image = Image.fromarray(np.array(syms))
+            pil_image = Image.fromarray(np.array(syms[0]))
             ss_img = pil_image.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
             input_tensor = self.transform(ss_img)
 
@@ -277,36 +286,44 @@ class Paint(object):
                 arrowprops=dict(facecolor='red', edgecolor='red', arrowstyle='->', lw=1.5))
             plt.show() 
             '''
+            
+            if len(syms) == 1: 
+                sympyList.append(max_class_name)
+            else:
+                sympyList.append((max_class_name, syms[1]))
         
-            sympyList.append(symbols(max_class_name))
+
             if self.dev:
                 annotateText = f"{max_class_name}, {int(max_prob*100)}%"
                 createLabelX, createLabelY, cl_side = labelPosList[idx][0], labelPosList[idx][1], labelPosList[idx][2]
                 self.createLabel(label_text=annotateText, x=createLabelX, y=createLabelY, size=cl_side)
 
         print(f"sympyList: {sympyList}")
-        if '=' in sympyList:
-            print("Yup")
-        else:
-            pass
 
+        output = list_to_sympy(sympyList)
+        print(output)
+
+        '''
         expression = ""
         for sym in sympyList:
             expression = f"{expression}{sym}"
 
         print(f"expression: {expression}")
+        '''
 
     def createLabel(self, label_text, x, y, size):
         label = Label(self.CC, text = label_text, font=("Courier", max(size, 100)//10))
         label.place(x=x, y=y)
         self.labelList.append(label)     
 
-        
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_19(), model_folder='NEW_save_states/CNNmodel15Epoch40.pt', transform=transform)
+    paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
+
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j
 # 30 IS MUCH BETTER WITH NUMBERS
-# 50 still no trig, YES 's', 8 doesnt work????
+# 50 still no trig, YES 's', 8 doesnt work???? - use model 19
 
 # Model 15 epoch 40 still works the best, with pen size 4
+
+# Model 21 Epoch 15 is pretty good, 50 cant do log
