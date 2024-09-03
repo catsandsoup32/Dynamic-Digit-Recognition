@@ -16,87 +16,143 @@ y = symbols('y')
 # STORE VALUES IN VARIABLES GLOBAL
 # use r"" for raw string
 
-
 testList = ['(', '5', '+', '3', ')', 'dot', '3']
 testList2 = ['log', ('_', '5'), '(', '10', ')', '=']
 testList3 = ['v', 'dot', 'r', '+', '0', '=']
-testList4 = ['sin', '(', '3', '0', ')']
+testList4 = ['5','sin', '(', '3', '0', ')', '5', '10']
+testList5 = ['5', '(', '5', '+', '3', ')']
+testList6 = ['5','cos','(','7',('^','2'),')']
+testList7 = ['5',('^', '2')]
+testList8 = ['8','+','5','/']
+testList9 = ['5', '+','5','8','e',('^','5'),'3',('^','x'),'/','e', ('^','2'), ('^','3')]
+testList10 = ['5', '/', '(','5', ('^','5'),('^','x'),')']
 
+testList11 = ['10', '+','10','/','(','5','+','10',')','S','+','A']
 
-
+# THIS CONVERTS TO LATEX. NOT EQUATION SOLVER
 def list_to_sympy(lst):
-    outputMode = 'normal' # output can be norm for only add subtract etc. but fx for functions
     expression = rf""
-    operations = {
-        '+': '+',
-        '-': '-',
-        'dot': '*',
-        '/': '/'
-    }
-
     modifying = False # allows to skip over exponent or subscript
-    for idx, itm in enumerate(lst):
-        #print(expression)
+    restartIdx = -1 
+    for idx, itm in enumerate(lst):    
+        if idx > restartIdx:
+            if isinstance(itm, tuple): # exponent or subscript Or decimal
 
-        if isinstance(itm, tuple): # exponent or subscript
-            if not modifying and lst[idx-1] != 'log': # if modifying is False
-                modifier = itm[0]
-                next_items = ""
+                if not modifying and lst[idx-1] != 'log': # if modifying is False
+                    modifier = itm[0]
+                    next_items = ""
 
-                for nextItm in lst[idx:len(lst)]:
-                    if isinstance(nextItm, tuple):
-                        next_items += nextItm[1]
+                    for nextItm in lst[idx+1:len(lst)]:
+                        if isinstance(nextItm, tuple):
+                            next_items += nextItm[1]
+                        else:
+                            break
+                    
+                    expression += rf'{modifier}{{{itm[1]}{next_items}}}' 
+                    modifying = True # doesnt keep looping
+
+                if idx == len(lst)-1:
+                    return expression
+                    
+            else: # not a tuple
+                modifying = False
+
+                if itm == r'/':
+                    # case singular fraction and case enclosed
+                    divideEnclosedStart = True if lst[idx-1] == ')' else False
+                    if divideEnclosedStart: 
+                        for i in range(0,idx-1):
+                            if lst[i] == '(':
+                                divideStartIdx = i+1
+                                break 
+                        dividePrevStr = list_to_sympy(lst[divideStartIdx:idx-1])
+                    else: 
+                        for i in range(idx-1,-1, -1):
+                            if i == 0:
+                                divideStartIdx = i
+                                break
+                            elif lst[i] == '+' or lst[i] == '-' or lst[i] == '*':
+                                divideStartIdx = i+1 
+                                break
+                        dividePrevStr = list_to_sympy(lst[divideStartIdx:idx])
+
+                    divideEnclosedEnd = True if lst[idx+1] == '(' else False
+                    if divideEnclosedEnd:
+                        for i in range(len(lst)-1, idx, -1):
+                            if lst[i] == ')':
+                                divideEndIdx = i
+                                break
+                        dividePostStr = list_to_sympy(lst[idx+2: divideEndIdx])
                     else:
-                        break
-            
-                expression += rf'{{{modifier}{next_items}}}' 
-                modifying = True # doesnt keep looping
+                        for i in range(idx+1, len(lst)):
+                            if i == len(lst)-1:
+                                divideEndIdx = i+1
+                                break
+                            elif lst[i] == '+' or lst[i] == '-' or lst[i] == '-':
+                                divideEndIdx = i+1
+                                break
+                        dividePostStr = list_to_sympy(lst[idx+1: divideEndIdx])
+
+                    restartIdx = divideEndIdx
+                    if divideStartIdx == 0:
+                        expression = ''
+                    else:
+                        expression = expression[:divideStartIdx]
+                    #print(dividePrevStr, dividePostStr)
+                    expression = expression + rf"\frac{{{dividePrevStr}}}{{{dividePostStr}}}"      
+
+                elif itm == 'int':
+                    pass
+
+                elif itm == 'sigma':
+                    pass
+
+                elif itm == 'log':
+                    pass
                 
-        else: 
-            modifying = False
+                elif itm == 'sin' or itm == 'tan' or itm == 'cos': 
+                    '''
+                    trigFx = getattr(__import__('sympy'), itm)
+                    trigStartIdx = idx + 2
+                    trigIdx = idx
+                    for nextItm in lst[idx+1:len(lst)]:
+                        trigIdx += 1
+                        if nextItm == ')':
+                            trigEndIdx = trigIdx 
+                            break
+                    print(f"idxs: {trigStartIdx, trigEndIdx}")
+                    evalItems_trig = list_to_sympy(lst[trigStartIdx:trigEndIdx], precision)
+                    #expression += str((trigFx(float(evalItems_trig) * pi/180).evalf(precision)))
+                    expression += str(trigFx(evalItems_trig))
+                    restartIdx = trigEndIdx
+                    '''
+                    expression += itm
+                    
+                elif itm == '+' or itm == '-':
+                    expression += itm
+                elif itm == '*':
+                    expression += '\cdot'
+                elif itm.isdigit() or itm.isalpha(): 
+                    expression += itm
+                    '''
+                    n = lst[idx+1] if idx < len(lst)-1 else None # fixes reference error
+                    if n=='(' or n== 'e' or n=='sin' or n=='tan' or n=='cos' or n=='log' or n=='sigma': 
+                        lst.insert(idx+1, 'dot') # implied multiplication
+                    '''
 
-            if itm == '=':
-                expression += itm
+                elif itm == '(' or itm == ')':
+                    expression += itm
             
-            elif itm == 'int':
-                pass
+                else:
+                    pass
 
-            elif itm == 'sigma':
-                pass
+                if idx == len(lst)-1: # END CASE 
+                    return expression
 
-            elif itm == 'log':
-                pass
-            
-            elif itm == 'sin' or itm == 'tan' or itm == 'cos': 
-                trigFx = getattr(__import__('sympy'), itm)
-                for nextItm in lst[idx+1:len(lst)]:
-                    if nextItm == ')':
-                        endIdxTrig = idx # this is the index to start again now
-                        break
-                evalItems_trig = (", ".join(lst[idx+2:endIdxTrig]))
-                expression += trigFx(evalItems_trig)
+print((list_to_sympy(testList11)))
 
-            elif itm in operations:
-                expression += operations[itm]
-
-            elif itm.isdigit() or itm.isalpha() or itm == '(' or itm == ')':
-                expression += itm
-        
-            else:
-                pass
-
-            if idx == len(lst)-1: # END CASE 
-                return expression
-
-#print(list_to_sympy(testList))
-
-# DO SPLIT
-
-# print(sin(30).evalf())  times pi/180 every time with
-
-# For a subscript, must be in format _{...}
-# For an exponent, ^{...}
 # For log, int, sigma, tan, sin, cos needs special expression
+# Need to eval variables and also differentiate from E 
 
 #function = getattr(__import__('sympy'), 'sin')
 #print(str(function(pi/6)))

@@ -300,8 +300,16 @@ class Paint(object):
 
         print(f"sympyList: {sympyList}")
 
-        output = list_to_sympy(sympyList)
-        print(output)
+        # split this into a left and right side of equals sign list
+        if '=' in sympyList:
+            equalsIdx = sympyList.index('=')
+            if equalsIdx == len(sympyList)-1: # nothing on right, we must solve 
+                pass
+        else:
+            pass
+
+        #output = list_to_sympy(sympyList)
+        #print(output)
 
         '''
         expression = ""
