@@ -216,7 +216,7 @@ class Paint(object):
         mssScaler = 70 + (336 + 10) * (canvasIdx-1) # deals with padding and mss coords being global not local
         labelPosList = []
 
-        for box in bbList: 
+        for idx, box in enumerate(bbList): 
             x = box[0]
             y = box[1]
             side = box[2]
@@ -229,17 +229,30 @@ class Paint(object):
                 bb_window = {"top": y + mssScaler, "left": x, "width": side, "height": side} # y is top
                 bb_ss = sct.grab(bb_window)
 
-            # This controls exponents, should change to check left
-            if centerY < int(0.9 * self.largestSquare[1]):
-                bb_ss_list.append((bb_ss, '^'))
-            elif centerY > int(0.9 * (self.largestSquare[1] + self.largestSquare[2])):
-                bb_ss_list.append((bb_ss, '_'))
+            # START magic tree method here
+            
+
+            if idx > 0: # doesn't activate on first loop
+                if centerY < int(0.9 * pastY_normal):
+                    bb_ss_list.append((bb_ss, '^'))
+                    print(centerY)
+                elif centerY > int(0.9 * (pastY_normal + pastS_normal)):
+                    bb_ss_list.append((bb_ss, '_'))
+                    print(centerY)
+                else: 
+                    bb_ss_list.append([bb_ss])
+                    print(centerY)
+                    pastY_normal = y
+                    pastS_normal = side
             else:
                 bb_ss_list.append([bb_ss])
+                print(centerY)
+                pastY_normal = y
+                pastS_normal = side
 
             labelPosList.append((x, y-30, side)) 
         
-        self.equalsX = x
+        self.equalsX = x # these are only used if last element is an equal sign
         self.equalsY = y
         self.equalsS = side
             

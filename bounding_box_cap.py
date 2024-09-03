@@ -29,7 +29,7 @@ def squareBB(input_image):
         # centering
         y = y - (w-h)//2 if s == w else y # if width is longer
         x = x - (h-w)//2 if s == h else x   # if height is longer
-        squareList.append([x,y,s,idx])
+        squareList.append([x,y,s,idx]) # put original width and height here !!!!    
 
     # THIS FIXES HOLES
     for idx, squareCoord in enumerate(squareList): 
@@ -38,6 +38,7 @@ def squareBB(input_image):
         else: 
             squareCoord[3] = None
     
+    print(f"hLine original: {hLineList}")
     # check minuses against each other to fix equals signs
     if len(hLineList) >= 2:
         for minusIdx in hLineList:
@@ -46,14 +47,22 @@ def squareBB(input_image):
             for minusIdx2 in hLineList:
                 x2, y2 = squareList[minusIdx2][0], squareList[minusIdx2][1]
                 if minusIdx != minusIdx2 and abs(x1-x2) < x_margin:
+                
+                    # remove equal sign indices
+                    hLineList.remove(minusIdx)
+                    hLineList.remove(minusIdx2)
+
                     for values in squareList:
                         values[1] = (y1+y2)//2 if values[3] == minusIdx else values[1] 
-                        values[3] = None if values[3] == minusIdx2 else values[3]                  
+                        values[3] = None if values[3] == minusIdx2 else values[3]  
+                                        
                     outBreak = True
                     break
             if outBreak:
                 break
 
+    print(f"hLine removed: {hLineList}")
+        
     # combines i's, j's, etc. and also crops dots
     for dotIdx in dotList:
         x, y, s = squareList[dotIdx][0], squareList[dotIdx][1], squareList[dotIdx][2]
@@ -94,13 +103,42 @@ def squareBB(input_image):
     sortedFinalSquareList = []
     insertIdx = 0
 
+    '''
+    # APPEND A 'NUM' or 'DEN' term  
+    # only check minuses that are near center to allow for other minuses in num / denom
+    centerLine = largestSquare[1] + largestSquare[2]//2 # top + side/2
+
+    hLineCompleteList = []
+    for hLineIdx in hLineList:
+        for squares in finalSquareList:
+            if hLineIdx == squares[3]:
+                hLineCompleteList.append((squares[0], squares[1], squares[2], squares[3])) 
+
+    print(f"HlinewithY: {hLineCompleteList}")
+
+    for idx, squares in enumerate(finalSquareList):
+        for hTuple in hLineCompleteList:
+            if squares[3] != hTuple[3]: # a horizontal line won't check itself
+                centerX = squares[0] + squares[2]//2
+                centerY = squares[1] + squares[2]//2
+                if centerX >= hTuple[0] and centerX < hTuple[0] + hTuple[2] and centerY >= hTuple[1] and centerY <= hTuple[1] + hTuple[2]: 
+                 # if the center of the symbol is within minus bb
+                    hCenter = hTuple[1] + hTuple[2]//2
+                    if centerY < hCenter: # above
+                        finalSquareList[idx].append('num')
+                        print(hTuple[3])
+                    elif centerY > hCenter:
+                        finalSquareList[idx].append('den')
+    
+    print(finalSquareList)
+    '''
+
     while insertIdx < len(finalSquareList):
         for squares in finalSquareList:
             if squares[0] == xCoordList[insertIdx]: 
                 sortedFinalSquareList.append(squares)
                 insertIdx += 1
                 break
-            
 
     for squares in sortedFinalSquareList:
         cv2.rectangle(binarized, (squares[0],squares[1]), (squares[0]+squares[2], squares[1]+squares[2]), (0, 255, 0), 2) 
@@ -108,9 +146,10 @@ def squareBB(input_image):
     #plt.imshow(binarized)
     #plt.show()
 
+    #print(sortedFinalSquareList)
     return (sortedFinalSquareList, largestSquare)
  
-#squareBB('ordering_test.png')
+#squareBB('equals_test.png')
 
 
 
