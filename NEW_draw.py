@@ -1,4 +1,4 @@
-from tkinter import Tk, Canvas, StringVar, Label, Button, Scale, HORIZONTAL, RAISED, SUNKEN, ROUND, TRUE, Frame # dont use wildcard import
+from tkinter import Tk, font, Canvas, StringVar, Label, Button, Scale, HORIZONTAL, RAISED, SUNKEN, ROUND, TRUE, Frame # dont use wildcard import
 from tkinter.colorchooser import askcolor
 import threading
 
@@ -19,13 +19,14 @@ import cv2
 import sympy
 from sympy import *
 from toSympy import list_to_sympy
+from parse_and_solve import solver
 
 import torch
 import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from NEW_train import transform
-from NEW_models import CNN_9, CNN_16, CNN_19
+from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22
 from NEW_dataloader import class_Labels_Length
 
 
@@ -207,7 +208,7 @@ class Paint(object):
 
         imageBGR = cv2.cvtColor(np.array(entire_ss), cv2.COLOR_BGRA2BGR) # np array and bgr for cv2
         bbList = squareBB(imageBGR)[0] # list of bounding boxes FROM OPENCV
-        largestSquare = squareBB(imageBGR)[1]
+        self.largestSquare = squareBB(imageBGR)[1]
         
         bb_ss_list = []
         canvasIdx = f"{self.CC}"[-1]
@@ -228,14 +229,19 @@ class Paint(object):
                 bb_window = {"top": y + mssScaler, "left": x, "width": side, "height": side} # y is top
                 bb_ss = sct.grab(bb_window)
 
-            if centerY < int(0.9 * largestSquare[1]):
+            # This controls exponents, should change to check left
+            if centerY < int(0.9 * self.largestSquare[1]):
                 bb_ss_list.append((bb_ss, '^'))
-            elif centerY > int(0.9 * (largestSquare[1] + largestSquare[2])):
+            elif centerY > int(0.9 * (self.largestSquare[1] + self.largestSquare[2])):
                 bb_ss_list.append((bb_ss, '_'))
             else:
                 bb_ss_list.append([bb_ss])
 
             labelPosList.append((x, y-30, side)) 
+        
+        self.equalsX = x
+        self.equalsY = y
+        self.equalsS = side
             
         # Show the button grid again
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='e')
@@ -293,7 +299,7 @@ class Paint(object):
             if len(syms) == 1: 
                 sympyList.append(max_class_name)
             else:
-                sympyList.append((max_class_name, syms[1]))
+                sympyList.append((syms[1], max_class_name)) # ENSURE this is consistent with toSympy
         
 
             if self.dev:
@@ -307,9 +313,16 @@ class Paint(object):
         if '=' in sympyList:
             equalsIdx = sympyList.index('=')
             if equalsIdx == len(sympyList)-1: # nothing on right, we must solve 
-                pass
+                latexLeft = list_to_sympy(sympyList[0:equalsIdx])
+                latexRight = solver(latexLeft)
+                self.solvedLabel(label_text=latexRight, x=self.equalsX + self.equalsS + 10, y=self.largestSquare[1] - self.equalsS//2)
+                latex_str = '$' + latexLeft + '=' + latexRight + '$'
+                self.convert_latex(input=latex_str)
             else: 
-                pass
+                latexLeft = list_to_sympy(sympyList[0:equalsIdx])
+                latexRight = list_to_sympy(sympyList[equalsIdx+1:len(sympyList)])
+                latex_str = '$' + latexLeft + '=' + latexRight + '$'
+                self.convert_latex(input=latex_str)
         else:
             latex_str = '$' + list_to_sympy(sympyList) + '$'
             self.convert_latex(input=latex_str) # RENDERS LATEX
@@ -329,12 +342,17 @@ class Paint(object):
         self.tk_image = ImageTk.PhotoImage(image)
 
         # Display the image on the Tkinter canvas
-        self.CC.create_image(1500, 200, image=self.tk_image)
+        self.CC.create_image(200, 200, image=self.tk_image)
         
     def createLabel(self, label_text, x, y, size):
         label = Label(self.CC, text = label_text, font=("Courier", max(size, 100)//10))
         label.place(x=x, y=y)
         self.labelList.append(label)     
+    
+    def solvedLabel(self, label_text, x, y):
+        label = Label(self.CC, text = label_text, bg='white', font=("Bradley Hand ITC", 70))
+        label.place(x=x, y=y)
+        self.labelList.append(label)
 
 if __name__ == '__main__':
     paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
@@ -348,5 +366,10 @@ if __name__ == '__main__':
 
 # Model 21 Epoch 15 is pretty good, 50 cant do log
 
-# BENCHMARK IS M_21 E_15 (CNN_9)
+# BENCHMARK IS M_21 E_15 (CNN_9) -  - - - - - - -  - - --- - - - - - - - - - - - -
+
+# M_22 E_20 is okay so far, sometimes messes up forward slash, doesn't detect dots
+# M_22 E_25 also doesn't detect dots :(
+
+
 

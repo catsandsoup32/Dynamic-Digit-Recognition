@@ -77,7 +77,7 @@ def list_to_sympy(lst):
                             if i == 0:
                                 divideStartIdx = i
                                 break
-                            elif lst[i] == '+' or lst[i] == '-' or lst[i] == '*':
+                            elif lst[i] == '+' or lst[i] == '-' or lst[i] == '*' or lst[i] == '(':
                                 divideStartIdx = i+1 
                                 break
                         dividePrevStr = list_to_sympy(lst[divideStartIdx:idx])
@@ -97,7 +97,7 @@ def list_to_sympy(lst):
                             if i == len(lst)-1:
                                 divideEndIdx = i+1
                                 break
-                            elif lst[i] == '+' or lst[i] == '-' or lst[i] == '-':
+                            elif lst[i] == '+' or lst[i] == '-' or lst[i] == '-' or lst[i] == ')':
                                 divideEndIdx = i+1
                                 break
                         dividePostStr = list_to_sympy(lst[idx+1: divideEndIdx])
@@ -129,6 +129,8 @@ def list_to_sympy(lst):
                 elif itm == 'log':
                     pass
                 
+                elif itm == 'pi':
+                    expression += '\\' + itm
                 elif itm == 'sin' or itm == 'tan' or itm == 'cos': 
                     '''
                     trigFx = getattr(__import__('sympy'), itm)
@@ -145,11 +147,11 @@ def list_to_sympy(lst):
                     expression += str(trigFx(evalItems_trig))
                     restartIdx = trigEndIdx
                     '''
-                    expression += itm
+                    expression += '\\' + itm # for latex format
                     
                 elif itm == '+' or itm == '-':
                     expression += itm
-                elif itm == '*':
+                elif itm == 'dot':
                     expression += '\cdot'
                 elif itm.isdigit() or itm.isalpha(): 
                     expression += itm

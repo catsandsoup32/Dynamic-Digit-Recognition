@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-x_margin = 20
+x_margin = 40
 
 def squareBB(input_image):
     #input_image = cv2.imread(input_image) # comment this out when using draw.py
