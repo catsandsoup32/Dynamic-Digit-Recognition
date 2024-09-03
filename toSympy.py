@@ -26,8 +26,11 @@ testList7 = ['5',('^', '2')]
 testList8 = ['8','+','5','/']
 testList9 = ['5', '+','5','8','e',('^','5'),'3',('^','x'),'/','e', ('^','2'), ('^','3')]
 testList10 = ['5', '/', '(','5', ('^','5'),('^','x'),')']
+testList11 = ['(','10', ')','+','10','/','(','5','+','10',')','S','+','A']
+testList12 = ['(', 'x', '+', 'y', ')', 'forward_slash', '3']
+testList13 = ['3', 'forward_slash', '(', '4', '+', '8', ')']
+testList14 = ['y', '(', '5', ')', 'forward_slash', '5']
 
-testList11 = ['10', '+','10','/','(','5','+','10',')','S','+','A']
 
 # THIS CONVERTS TO LATEX. NOT EQUATION SOLVER
 def list_to_sympy(lst):
@@ -57,12 +60,15 @@ def list_to_sympy(lst):
             else: # not a tuple
                 modifying = False
 
-                if itm == r'/':
+                if itm == 'forward_slash':
                     # case singular fraction and case enclosed
                     divideEnclosedStart = True if lst[idx-1] == ')' else False
                     if divideEnclosedStart: 
-                        for i in range(0,idx-1):
-                            if lst[i] == '(':
+                        for i in range(idx-1,-1, -1):
+                            if i == 0:
+                                divideStartIdx = i
+                                break
+                            if lst[i] == '(' and lst[i-1] != '(':
                                 divideStartIdx = i+1
                                 break 
                         dividePrevStr = list_to_sympy(lst[divideStartIdx:idx-1])
@@ -78,13 +84,16 @@ def list_to_sympy(lst):
 
                     divideEnclosedEnd = True if lst[idx+1] == '(' else False
                     if divideEnclosedEnd:
-                        for i in range(len(lst)-1, idx, -1):
-                            if lst[i] == ')':
+                        for i in range(idx+1, len(lst)):
+                            if i == len(lst)-1:
+                                divideEndIdx = i # COULD bug HERE
+                                break
+                            if lst[i] == ')' and lst[i+1] != ')':
                                 divideEndIdx = i
                                 break
                         dividePostStr = list_to_sympy(lst[idx+2: divideEndIdx])
                     else:
-                        for i in range(idx+1, len(lst)):
+                        for i in range(idx+1, len(lst)): # and here
                             if i == len(lst)-1:
                                 divideEndIdx = i+1
                                 break
@@ -97,10 +106,20 @@ def list_to_sympy(lst):
                     if divideStartIdx == 0:
                         expression = ''
                     else:
-                        expression = expression[:divideStartIdx]
-                    #print(dividePrevStr, dividePostStr)
-                    expression = expression + rf"\frac{{{dividePrevStr}}}{{{dividePostStr}}}"      
-
+                        if divideEnclosedStart:
+                            expression = expression[:divideStartIdx-1]
+                        else:
+                            expression = expression[:divideStartIdx+1]
+                    
+                    print(dividePrevStr, dividePostStr)
+                    expression = expression + rf"\frac{{{dividePrevStr}}}{{{dividePostStr}}}"
+                    if divideEnclosedEnd:
+                        if restartIdx == len(lst)-1:
+                            return expression
+                    else:
+                        if restartIdx == len(lst):
+                            return expression
+    
                 elif itm == 'int':
                     pass
 
@@ -149,7 +168,11 @@ def list_to_sympy(lst):
                 if idx == len(lst)-1: # END CASE 
                     return expression
 
-print((list_to_sympy(testList11)))
+#print((list_to_sympy(testList14)))
+
+
+
+
 
 # For log, int, sigma, tan, sin, cos needs special expression
 # Need to eval variables and also differentiate from E 

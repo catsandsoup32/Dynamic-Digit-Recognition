@@ -2,13 +2,15 @@ from tkinter import Tk, Canvas, StringVar, Label, Button, Scale, HORIZONTAL, RAI
 from tkinter.colorchooser import askcolor
 import threading
 
-from PIL import Image, ImageGrab
+from PIL import Image, ImageGrab, ImageTk
 import PIL.ImageOps    
 import pyautogui
 import pygetwindow as gw
 import io 
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+from matplotlib.figure import Figure
 
 import mss
 from bounding_box_cap import squareBB
@@ -51,8 +53,9 @@ class Paint(object):
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
         self.clear_button.grid(row=0, column=2, padx=5, pady=5, sticky='w')
         self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
-        self.choose_size_button.grid(row=0, column=5, padx=5, pady=5, sticky='w')
         self.dev_button.grid(row=0, column=4, padx=5, pady=5, sticky='e')
+        self.choose_size_button.grid(row=0, column=5, padx=5, pady=5, sticky='w')
+
         
         # PYTORCH STUFF HERE
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -239,8 +242,8 @@ class Paint(object):
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
         self.clear_button.grid(row=0, column=2, padx=5, pady=5, sticky='w')
         self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
-        self.choose_size_button.grid(row=0, column=5, padx=5, pady=5, sticky='w')
         self.dev_button.grid(row=0, column=4, padx=5, pady=5, sticky='e')
+        self.choose_size_button.grid(row=0, column=5, padx=5, pady=5, sticky='w')
 
         self.run_inference(symList=bb_ss_list, labelPosList=labelPosList)
 
@@ -256,7 +259,7 @@ class Paint(object):
                 #showIm = np.squeeze(input_tensor.numpy()) 
                 #plt.clf()
                 #plt.imshow(showIm)
-                #plt.show() 
+                #plt.show() # uncomment to debug
                 
                 input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
                 torch.set_printoptions(threshold=1000, edgeitems=10)
@@ -305,20 +308,29 @@ class Paint(object):
             equalsIdx = sympyList.index('=')
             if equalsIdx == len(sympyList)-1: # nothing on right, we must solve 
                 pass
+            else: 
+                pass
         else:
-            pass
+            latex_str = '$' + list_to_sympy(sympyList) + '$'
+            self.convert_latex(input=latex_str) # RENDERS LATEX
+    
+    def convert_latex(self, input):
+        print(f"latex string: {input}")
+        fig = Figure(figsize=(5, 5))
+        ax = fig.add_subplot(111)
+        ax.text(0.5, 0.5, input, fontsize=50, ha='center', va='center')
+        ax.axis('off')
 
-        #output = list_to_sympy(sympyList)
-        #print(output)
+        # Convert the Matplotlib figure to a PIL image
+        buf = io.BytesIO()
+        fig.savefig(buf, format='png')
+        buf.seek(0)
+        image = Image.open(buf)
+        self.tk_image = ImageTk.PhotoImage(image)
 
-        '''
-        expression = ""
-        for sym in sympyList:
-            expression = f"{expression}{sym}"
-
-        print(f"expression: {expression}")
-        '''
-
+        # Display the image on the Tkinter canvas
+        self.CC.create_image(1500, 200, image=self.tk_image)
+        
     def createLabel(self, label_text, x, y, size):
         label = Label(self.CC, text = label_text, font=("Courier", max(size, 100)//10))
         label.place(x=x, y=y)
@@ -335,3 +347,6 @@ if __name__ == '__main__':
 # Model 15 epoch 40 still works the best, with pen size 4
 
 # Model 21 Epoch 15 is pretty good, 50 cant do log
+
+# BENCHMARK IS M_21 E_15 (CNN_9)
+
