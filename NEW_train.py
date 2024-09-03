@@ -20,7 +20,7 @@ from PIL import Image
 
 # ------------------------------------------------------------------------------------------------------------------
 # Define model
-from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22
+from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_23
 
 # transform and init data
 from NEW_dataloader import MathSymbolDataset
@@ -137,16 +137,16 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
         print(f"TEST LOSS: {test_loss}")
 
 if __name__ == '__main__':
-    main(num_epochs = 70, 
+    main(num_epochs = 60, 
          experimentNum = 22,
-         use_model = CNN_22(),
+         use_model = CNN_23(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
          num_classes = 72,
          loadFromSaved = None,
          test_loop = False,
-         LR = 0.001)
+         LR = 0.0008)
 
 
 # Duplicate of everything with NEW_ prefix, start with CNN_9 and adjust
@@ -195,5 +195,6 @@ Epoch 95/120 - Train loss: 0.7169919920367526 train acc: 81.83191680908203, val 
 
 # Experiment 21: try CNN_9 with 0.001 (or 0.004?) LR - E15 99.5 and E50 99.9
 
-# Experiment 22: try CNN_9 with 0.001 LR but params to 512 in FC1 - E25 99.7, E20 99.6
+# Experiment 22: try CNN_9 with 0.001 LR but params to 512 in FC1 - E25 99.7, E20 99.6 (new CNN_22 model)
  
+# Experiment 23: modify CNN_9 to have some dropout in conv layer 2, p = 0.3, LR 0.0008
