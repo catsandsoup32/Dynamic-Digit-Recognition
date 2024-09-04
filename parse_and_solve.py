@@ -23,6 +23,5 @@ def solver(latex, varDict):
         print('symbols')
         return str(sympy_expr.evalf())
 
-
-#print(solver(r'\log(\frac{pi}{2})', None))
+#print(solver(r'\int_{0}^{10} x^2 \, dx', None))
 

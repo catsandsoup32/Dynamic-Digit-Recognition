@@ -31,7 +31,8 @@ testList12 = ['(', 'x', '+', 'y', ')', 'forward_slash', '3']
 testList13 = ['3', 'forward_slash', '(', '4', '+', '8', ')']
 testList14 = ['y', '(', '5', ')', 'forward_slash', '5']
 testList15 = ['sin', '(', 'pi',')']
-
+testList16 = ['infty']
+testList17 = ['int', '5', 'x','d','x']
 
 # THIS CONVERTS TO LATEX. NOT EQUATION SOLVER
 def list_to_sympy(lst):
@@ -120,9 +121,27 @@ def list_to_sympy(lst):
                     else:
                         if restartIdx == len(lst):
                             return expression
+                
+                elif itm == 'infty':
+                    expression += '\\' + itm
     
                 elif itm == 'int':
-                    pass
+                    if isinstance(lst[idx+1], tuple) or isinstance(lst[idx+2], tuple): # bounds exist
+                        lowerBound = lst[idx+1][1] if isinstance(lst[idx+1], tuple) else lst[idx+1]
+                        upperBound = lst[idx+2][1] if isinstance(lst[idx+2], tuple) else lst[idx+2]
+                        expression += '\\'+itm+rf'_{{{lowerBound}}}^{{{upperBound}}}'
+                        intStartIdx = idx + 3
+                    else:
+                        intStartIdx = idx + 1
+                        expression += '\\'+itm
+
+                    for dIdx, dItm in enumerate(lst[idx+1:len(lst)]):
+                        if dItm == 'd':
+                            intStopIdx = dIdx + 2 # the index after variable 
+                            break
+                        
+                    expression += list_to_sympy(lst[intStartIdx:intStopIdx-1]) + f'\\,d' 
+                    restartIdx = intStopIdx-1
 
                 elif itm == 'sigma':
                     pass
@@ -171,7 +190,7 @@ def list_to_sympy(lst):
                 if idx == len(lst)-1: # END CASE 
                     return expression
 
-#print(list_to_sympy(testList15))
+#print(list_to_sympy(testList17))
 
 # For log, int, sigma, tan, sin, cos needs special expression
 # Need to eval variables and also differentiate from E 

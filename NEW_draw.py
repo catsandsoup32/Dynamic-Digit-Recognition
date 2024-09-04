@@ -47,7 +47,7 @@ class Paint(object):
         self.eraser_button = Button(self.root, text='eraser', command=self.use_eraser)
         self.clear_button = Button(self.root, text='clear', command=self.clear_canvas)
         self.predict_button = Button(self.root, text='predict', command=self.predict)
-        self.choose_size_button = Scale(self.root, from_=2, to=50, orient=HORIZONTAL)
+        self.choose_size_button = Scale(self.root, from_=2, to=10, orient=HORIZONTAL)
         self.dev_button = Button(self.root, text='dev', command=self.toggle_dev)
 
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='e')
@@ -56,7 +56,6 @@ class Paint(object):
         self.predict_button.grid(row=0, column=3, padx=5, pady=5, sticky='w')
         self.dev_button.grid(row=0, column=4, padx=5, pady=5, sticky='e')
         self.choose_size_button.grid(row=0, column=5, padx=5, pady=5, sticky='w')
-
         
         # PYTORCH STUFF HERE
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -280,6 +279,18 @@ class Paint(object):
         for idx, syms in enumerate(symList): # these are mss screenshots
             pil_image = Image.fromarray(np.array(syms[0]))
             ss_img = pil_image.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
+            '''
+            ss_img = ss_img.convert("RGB") # this will white out strips for numbers close together, prob not needed
+            strip_width = 5 
+            width, height = ss_img.size
+            for x in range(strip_width):
+                for y in range(height):
+                    ss_img.putpixel((x, y), (255, 255, 255))  
+            for x in range(width - strip_width, width):
+                for y in range(height):
+                    ss_img.putpixel((x, y), (255, 255, 255))  
+            ss_img.show()
+            '''
             input_tensor = self.transform(ss_img)
 
             if isinstance(input_tensor, torch.Tensor):   
@@ -289,7 +300,7 @@ class Paint(object):
                 #plt.show() # uncomment to debug
                 
                 input_tensor = torch.unsqueeze(input_tensor, 0) # Add batch dim
-                torch.set_printoptions(threshold=1000, edgeitems=10)
+                #torch.set_printoptions(threshold=1000, edgeitems=10)
                 #print(f"Image tensor of size {input_tensor.size()}: {input_tensor}")
                 input_tensor = input_tensor.to(self.device)
             
@@ -373,7 +384,7 @@ class Paint(object):
         self.tk_image = ImageTk.PhotoImage(image)
 
         # Display the image on the Tkinter canvas
-        self.CC.create_image(200, 200, image=self.tk_image)
+        self.CC.create_image(150, 150, image=self.tk_image)
         
     def createLabel(self, label_text, x, y, size):
         label = Label(self.CC, text = label_text, font=("Courier", max(size, 100)//10))
@@ -386,7 +397,7 @@ class Paint(object):
         self.labelList.append(label)
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
+    paint_app = Paint(model=CNN_26(), model_folder='NEW_save_states/CNNmodel26Epoch20.pt', transform=transform)
 
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j
@@ -404,6 +415,13 @@ if __name__ == '__main__':
 
 # test 26 with 96 acc, epoch 20 is really good (messes up 0 and dot tho with forward slash, e and t)
 # E25 thinks e is c, pi bad 35, okay just delete the rest
+
+# 26 doesnt work
+# 27 doesnt work
+
+
+
+
 
 
 
