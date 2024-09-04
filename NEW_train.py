@@ -142,8 +142,8 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
         print(f"TEST LOSS: {test_loss}")
 
 if __name__ == '__main__':
-    main(num_epochs = 50, 
-         experimentNum = 26,
+    main(num_epochs = 60, 
+         experimentNum = 28,
          use_model = CNN_26(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
@@ -151,7 +151,7 @@ if __name__ == '__main__':
          num_classes = 72,
          loadFromSaved = None,
          test_loop = False,
-         LR = 0.00001)
+         LR = 0.0000075)
 
 
 # Duplicate of everything with NEW_ prefix, start with CNN_9 and adjust
@@ -208,5 +208,7 @@ Epoch 95/120 - Train loss: 0.7169919920367526 train acc: 81.83191680908203, val 
 
 # Experiment 25: copy paste model with 270,000 params, LR = 0.0001 converges just as fast as 0.001
 
-# Experiment 26: Go back to CNN_9 and apply data augmentation, dropout FC1 (after relu), with LR 0.000005 (next train)
+# Experiment 26: Go back to CNN_9 and apply data augmentation, dropout FC1 (after relu) LR 0.00001
+# Experiment 27: CNN_26 but with LR 0.000005
 
+# Experiment 28: CNN_26 but with LR 0.0000075
