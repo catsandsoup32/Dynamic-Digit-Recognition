@@ -3,16 +3,26 @@ from sympy import evalf
 from sympy.parsing.latex import parse_latex
 from toSympy import list_to_sympy
 from sympy import pi
-
+from sympy import Float
 
 test1 = r"\frac{1}{2} + 5^{2}"
 
 # Convert LaTeX to SymPy
 def solver(latex, varDict):
-    for key, value in varDict.items():
-        if key in latex:
-            latex = latex.replace(key, list_to_sympy(value))    
+    if varDict is not None:
+        for key, value in varDict.items():
+            if key in latex:
+                latex = latex.replace(key, list_to_sympy(value))    
+    latex = latex.replace(r'\pi', '3.1415926') if r'\pi' in latex else latex
     sympy_expr = parse_latex(latex) # built in function
-    return str(sympy_expr.evalf(3))
+    num_eval = sympy_expr.evalf(3)
+    if isinstance(num_eval, Float): # float
+        print('float')
+        return str(int(sympy_expr.evalf(3) * 1000)/1000) # rounds
+    else:
+        print('symbols')
+        return str(sympy_expr.evalf())
 
-#print(solver('\sin(3.14158)'))
+
+#print(solver(r'\log(\frac{pi}{2})', None))
+

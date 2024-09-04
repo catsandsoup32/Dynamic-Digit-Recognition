@@ -26,7 +26,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from NEW_train import transform
-from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_24
+from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_24, CNN_26
 from NEW_dataloader import class_Labels_Length
 
 
@@ -241,9 +241,9 @@ class Paint(object):
                     bb_ss = sct.grab(bb_window)                
 
                 if idx > 0: # doesn't activate on first loop
-                    if centerY < int(0.8 * pastY_normal):
+                    if centerY < int(0.9 * pastY_normal): # 0.8 has bugs
                         bb_ss_list.append((bb_ss, '^'))
-                    elif centerY > int(0.8 * (pastY_normal + pastS_normal)):
+                    elif centerY > int(0.9 * (pastY_normal + pastS_normal)):
                         bb_ss_list.append((bb_ss, '_'))
                     else: 
                         bb_ss_list.append([bb_ss])
@@ -253,10 +253,14 @@ class Paint(object):
                             pastS_normal = side
                 else:
                     bb_ss_list.append([bb_ss])
-                    if abs(side - self.largestSquare[2]) < 30: # fixes nums after operations being subscripted
-                        print(f"Error? If this side value ({side}) belongs to an operation")    
+                    if idx == 0: # bug fix
                         pastY_normal = y
                         pastS_normal = side
+                    else:
+                        if abs(side - self.largestSquare[2]) < 30: # fixes nums after operations being subscripted
+                            print(f"Error? If this side value ({side}) belongs to an operation")    
+                            pastY_normal = y
+                            pastS_normal = side
         
         markup(bbList)
 
@@ -398,6 +402,9 @@ if __name__ == '__main__':
 # M_22 E_20 is okay so far, sometimes messes up forward slash, doesn't detect dots
 # M_22 E_25 also doesn't detect dots :(
 
-# test 26 with 96 acc
+# test 26 with 96 acc, epoch 20 is really good (messes up 0 and dot tho with forward slash, e and t)
+# E25 thinks e is c, pi bad 35, okay just delete the rest
+
+
 
 

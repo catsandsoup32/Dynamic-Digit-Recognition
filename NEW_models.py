@@ -101,6 +101,7 @@ class CNN_9(nn.Module):
         x = self.fc3(x)
         return x
     
+    
 class CNN_23(nn.Module):
     def __init__(self):
         super(CNN_23, self).__init__()
