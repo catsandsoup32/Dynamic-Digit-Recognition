@@ -397,7 +397,7 @@ class Paint(object):
         self.labelList.append(label)
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_26(), model_folder='NEW_save_states/CNNmodel26Epoch20.pt', transform=transform)
+    paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
 
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j
