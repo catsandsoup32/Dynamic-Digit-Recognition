@@ -208,4 +208,4 @@ Epoch 95/120 - Train loss: 0.7169919920367526 train acc: 81.83191680908203, val 
 
 # Experiment 25: copy paste model with 270,000 params, LR = 0.0001 converges just as fast as 0.001
 
-# Experiment 26: Go back to CNN_9 and apply data augmentation, dropout FC1 (after relu), with LR 0.00001
+# Experiment 26: Go back to CNN_9 and apply data augmentation, dropout FC1 (after relu), with LR 0.000005 (next train)
