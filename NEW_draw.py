@@ -398,6 +398,6 @@ if __name__ == '__main__':
 # M_22 E_20 is okay so far, sometimes messes up forward slash, doesn't detect dots
 # M_22 E_25 also doesn't detect dots :(
 
-# M_24 de-parameterized is awful
+# test 26 with 96 acc
 
 

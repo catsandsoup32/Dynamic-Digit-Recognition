@@ -4,7 +4,7 @@ from torch.utils.data import random_split, Dataset, DataLoader
 import torchvision.transforms as transforms
 from torchmetrics import Accuracy
 
-from NEW_models import CNN_16, CNN_24
+from NEW_models import CNN_16, CNN_24, CNN_26
 from NEW_dataloader import MathSymbolDataset
 from tqdm import tqdm
 
@@ -19,11 +19,11 @@ def main():
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    model = CNN_24()
+    model = CNN_26()
     model.eval()
     model.to(device)
     accuracy = Accuracy(task='multiclass', num_classes=72).to(device)
-    model.load_state_dict(torch.load('NEW_save_states/CNNmodel24Epoch15.pt', map_location=device, weights_only=True))
+    model.load_state_dict(torch.load('NEW_save_states/CNNmodel26Epoch20.pt', map_location=device, weights_only=True))
 
     running_acc = 0
     for images, labels in tqdm(test_loader, desc="testing"):
