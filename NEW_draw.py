@@ -72,7 +72,8 @@ class Paint(object):
         self.CC = None # current canvas
         self.labelList = []
         self.dev = True
-        
+        self.storedSymbolDict = {} 
+
         # Arrange canvas and output area in a 2-column layout
         self.f.grid(row=1, column=0, sticky='nsew', padx=0, pady=0)
         #self.output_frame.grid(row=1, column=1, sticky='nsew', padx=0, pady=0)
@@ -147,7 +148,7 @@ class Paint(object):
         self.labelList.clear()
         canvasIdx = f"{self.CC}"[-1]
         canvasIdx = 1 if canvasIdx == 's' else int(canvasIdx)
-        self.storedSymbolListList[canvasIdx-1] = []
+        self.storedSymbolDict = {}
         
     def paint(self, event):
         self.line_width = self.choose_size_button.get()
@@ -225,6 +226,8 @@ class Paint(object):
         self.equalsX, self.equalsY, self.equalsS = bbList[-1][0], bbList[-1][1], bbList[-1][2]  
         # these are only used if last element is an equal sign
 
+        print(f"largestSquare Side: {self.largestSquare[2]}")
+
         def markup(lst):
             for idx, box in enumerate(lst): 
                 x = box[0]
@@ -240,20 +243,20 @@ class Paint(object):
                 if idx > 0: # doesn't activate on first loop
                     if centerY < int(0.8 * pastY_normal):
                         bb_ss_list.append((bb_ss, '^'))
-                        print(centerY)
                     elif centerY > int(0.8 * (pastY_normal + pastS_normal)):
                         bb_ss_list.append((bb_ss, '_'))
-                        print(centerY)
                     else: 
                         bb_ss_list.append([bb_ss])
-                        print(centerY)
-                        pastY_normal = y
-                        pastS_normal = side
+                        if abs(side - self.largestSquare[2]) < 30:
+                            print(f"Error? If this side value ({side}) belongs to an operation")
+                            pastY_normal = y
+                            pastS_normal = side
                 else:
                     bb_ss_list.append([bb_ss])
-                    print(centerY)
-                    pastY_normal = y
-                    pastS_normal = side
+                    if abs(side - self.largestSquare[2]) < 30: # fixes nums after operations being subscripted
+                        print(f"Error? If this side value ({side}) belongs to an operation")    
+                        pastY_normal = y
+                        pastS_normal = side
         
         markup(bbList)
 
@@ -324,22 +327,22 @@ class Paint(object):
         print(f"sympyList: {sympyList}")
 
         # split this into a left and right side of equals sign list
-        self.storedSymbolListList = [[],[],[],[],[]] # one for every cell
         canvasIdx = f"{self.CC}"[-1]
         canvasIdx = 1 if canvasIdx == 's' else int(canvasIdx)
         if '=' in sympyList:
             equalsIdx = sympyList.index('=')
             if equalsIdx == len(sympyList)-1: # nothing on right, we must solve 
                 latexLeft = list_to_sympy(sympyList[0:equalsIdx])
-                latexRight = solver(latexLeft)
+                latexRight = solver(latexLeft, self.storedSymbolDict)
                 self.solvedLabel(label_text=latexRight, x=self.equalsX + self.equalsS + 10, y=self.largestSquare[1] - self.equalsS//2)
                 latex_str = '$' + latexLeft + '=' + latexRight + '$'
                 self.convert_latex(input=latex_str)
             else: 
                 if equalsIdx == 1: # left side is single variable
-                    self.storedSymbolListList[canvasIdx-1].append(sympyList[0])
                     latexLeft = list_to_sympy(sympyList[0:equalsIdx])
                     latexRight = list_to_sympy(sympyList[equalsIdx+1:len(sympyList)])
+                    self.storedSymbolDict[latexLeft] = latexRight
+                    print(f"storedSymbolDict: {self.storedSymbolDict}")
                     latex_str = '$' + latexLeft + '=' + latexRight + '$'
                     self.convert_latex(input=latex_str)
                 else: 
@@ -351,7 +354,7 @@ class Paint(object):
             latex_str = '$' + list_to_sympy(sympyList) + '$'
             self.convert_latex(input=latex_str) # RENDERS LATEX
     
-    def convert_latex(self, input):
+    def convert_latex(self, input): # *render latex
         print(f"latex string: {input}")
         fig = Figure(figsize=(5, 5))
         ax = fig.add_subplot(111)
