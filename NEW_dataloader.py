@@ -95,11 +95,11 @@ class MathSymbolDataset(Dataset):
             img_path = self.image_paths_list[self.test_indices[idx]]
             label = self.labels_list[self.test_indices[idx]]
 
-        # image = Image.open(img_path) 
+        image = Image.open(img_path) 
 
-        input_image = cv2.imread(img_path, 0)
-        _, image = cv2.threshold(input_image, 128, 255, cv2.THRESH_BINARY) # gets rid of noise
-        image = Image.fromarray(image) # convert from np array to PIL for pytorch
+        #input_image = cv2.imread(img_path, 0)
+        #_, image = cv2.threshold(input_image, 128, 255, cv2.THRESH_BINARY) # gets rid of noise
+        #image = Image.fromarray(image) # convert from np array to PIL for pytorch
 
         if self.transform:
             image = self.transform(image)

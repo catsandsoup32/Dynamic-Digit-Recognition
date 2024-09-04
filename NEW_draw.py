@@ -26,7 +26,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from NEW_train import transform
-from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22
+from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_24, CNN_25
 from NEW_dataloader import class_Labels_Length
 
 
@@ -368,7 +368,7 @@ class Paint(object):
         self.labelList.append(label)
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
+    paint_app = Paint(model=CNN_25(), model_folder='NEW_save_states/CNNmodel25Epoch15.pt', transform=transform)
 
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j
@@ -384,5 +384,6 @@ if __name__ == '__main__':
 # M_22 E_20 is okay so far, sometimes messes up forward slash, doesn't detect dots
 # M_22 E_25 also doesn't detect dots :(
 
+# M_24 de-parameterized is awful
 
 

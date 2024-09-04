@@ -16,27 +16,32 @@ from sklearn.model_selection import train_test_split
 import os
 from PIL import Image
 
-# Key changes: change data_dir path
-
 # ------------------------------------------------------------------------------------------------------------------
 # Define model
-from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_23
+from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_23, CNN_24, CNN_26
 
 # transform and init data
 from NEW_dataloader import MathSymbolDataset
 
 transform = transforms.Compose([
-    transforms.Grayscale(num_output_channels=1),  # Convert to grayscale
+    transforms.Grayscale(num_output_channels=1),
     transforms.ToTensor(),
     transforms.Normalize(mean=(0.5,), std=(0.5,)) # subtract 0.5 and then divide 0.5 (z-score)
 ])
 
+transform_augment = transforms.Compose([
+    transforms.Grayscale(num_output_channels=1),
+    transforms.RandomAdjustSharpness(sharpness_factor=2, p=0.5),
+    transforms.RandomAffine(degrees=15, translate=(0.1, 0.1), shear=20),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=(0.5,), std=(0.5,)) # subtract 0.5 and then divide 0.5 (z-score)
+])
 
-train_dataset = MathSymbolDataset(data_dir='data/extracted_images_new', mode = 'train', transform=transform, seed=21)
+train_dataset = MathSymbolDataset(data_dir='data/extracted_images_new', mode = 'train', transform=transform_augment, seed=21)
 train_size = int(0.9 * len(train_dataset)) # split into train and val set
 val_size = len(train_dataset) - train_size
 new_train_dataset, val_dataset = random_split(dataset=train_dataset, lengths=[train_size, val_size])
-test_dataset = MathSymbolDataset(data_dir='data/extracted_images_new', mode = 'test', transform=transform, seed=21)
+test_dataset = MathSymbolDataset(data_dir='data/extracted_images_new', mode = 'test', transform=transform_augment, seed=21)
 
 # ------------------------------------------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------------------------------------------
@@ -137,16 +142,16 @@ def main(num_epochs, experimentNum, use_model, use_dataset_train, use_dataset_va
         print(f"TEST LOSS: {test_loss}")
 
 if __name__ == '__main__':
-    main(num_epochs = 60, 
-         experimentNum = 22,
-         use_model = CNN_23(),
+    main(num_epochs = 50, 
+         experimentNum = 26,
+         use_model = CNN_26(),
          use_dataset_train = new_train_dataset,
          use_dataset_val = val_dataset,
          use_dataset_test = test_dataset,
          num_classes = 72,
          loadFromSaved = None,
          test_loop = False,
-         LR = 0.0008)
+         LR = 0.00001)
 
 
 # Duplicate of everything with NEW_ prefix, start with CNN_9 and adjust
@@ -198,3 +203,9 @@ Epoch 95/120 - Train loss: 0.7169919920367526 train acc: 81.83191680908203, val 
 # Experiment 22: try CNN_9 with 0.001 LR but params to 512 in FC1 - E25 99.7, E20 99.6 (new CNN_22 model)
  
 # Experiment 23: modify CNN_9 to have some dropout in conv layer 2, p = 0.3, LR 0.0008
+
+# Experiment 24: Use 134,000 parameters, LR = 0.001, E15 99.5 val acc but is really bad, 99.5 TEST ACC ???
+
+# Experiment 25: copy paste model with 270,000 params, LR = 0.0001 converges just as fast as 0.001
+
+# Experiment 26: Go back to CNN_9 and apply data augmentation, dropout FC1 (after relu), with LR 0.00001
