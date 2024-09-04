@@ -26,7 +26,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from NEW_train import transform
-from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_24, CNN_25
+from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_24
 from NEW_dataloader import class_Labels_Length
 
 
@@ -145,6 +145,9 @@ class Paint(object):
         for label in self.labelList:
             label.destroy()
         self.labelList.clear()
+        canvasIdx = f"{self.CC}"[-1]
+        canvasIdx = 1 if canvasIdx == 's' else int(canvasIdx)
+        self.storedSymbolListList[canvasIdx-1] = []
         
     def paint(self, event):
         self.line_width = self.choose_size_button.get()
@@ -215,47 +218,45 @@ class Paint(object):
         canvasIdx = 1 if canvasIdx == 's' else int(canvasIdx)
         mssScaler = 70 + (336 + 10) * (canvasIdx-1) # deals with padding and mss coords being global not local
         labelPosList = []
-
-        for idx, box in enumerate(bbList): 
-            x = box[0]
-            y = box[1]
-            side = box[2]
-            centerY = y + side//2
+        for box in bbList:
+            labelPosList.append((box[0], box[1]-30, box[2])) 
             if self.dev:
-                self.bounding_box(x=x, y=y, width=side, height=side, color='green') # based on current canvas so y scales
+                self.bounding_box(x=box[0], y=box[1], width=box[2], height=box[2], color='green')
+        self.equalsX, self.equalsY, self.equalsS = bbList[-1][0], bbList[-1][1], bbList[-1][2]  
+        # these are only used if last element is an equal sign
 
-            with mss.mss() as sct: 
-                # NOTE_ mssScaler is needed for bug fix
-                bb_window = {"top": y + mssScaler, "left": x, "width": side, "height": side} # y is top
-                bb_ss = sct.grab(bb_window)
+        def markup(lst):
+            for idx, box in enumerate(lst): 
+                x = box[0]
+                y = box[1]
+                side = box[2]
+                centerY = y + side//2
+                
+                with mss.mss() as sct: 
+                    # NOTE_ mssScaler is needed for bug fix
+                    bb_window = {"top": y + mssScaler, "left": x, "width": side, "height": side} # y is top
+                    bb_ss = sct.grab(bb_window)                
 
-            # START magic tree method here
-            
-
-            if idx > 0: # doesn't activate on first loop
-                if centerY < int(0.9 * pastY_normal):
-                    bb_ss_list.append((bb_ss, '^'))
-                    print(centerY)
-                elif centerY > int(0.9 * (pastY_normal + pastS_normal)):
-                    bb_ss_list.append((bb_ss, '_'))
-                    print(centerY)
-                else: 
+                if idx > 0: # doesn't activate on first loop
+                    if centerY < int(0.8 * pastY_normal):
+                        bb_ss_list.append((bb_ss, '^'))
+                        print(centerY)
+                    elif centerY > int(0.8 * (pastY_normal + pastS_normal)):
+                        bb_ss_list.append((bb_ss, '_'))
+                        print(centerY)
+                    else: 
+                        bb_ss_list.append([bb_ss])
+                        print(centerY)
+                        pastY_normal = y
+                        pastS_normal = side
+                else:
                     bb_ss_list.append([bb_ss])
                     print(centerY)
                     pastY_normal = y
                     pastS_normal = side
-            else:
-                bb_ss_list.append([bb_ss])
-                print(centerY)
-                pastY_normal = y
-                pastS_normal = side
-
-            labelPosList.append((x, y-30, side)) 
         
-        self.equalsX = x # these are only used if last element is an equal sign
-        self.equalsY = y
-        self.equalsS = side
-            
+        markup(bbList)
+
         # Show the button grid again
         self.pen_button.grid(row=0, column=0, padx=5, pady=5, sticky='e')
         self.eraser_button.grid(row=0, column=1, padx=5, pady=5, sticky='w')
@@ -323,6 +324,9 @@ class Paint(object):
         print(f"sympyList: {sympyList}")
 
         # split this into a left and right side of equals sign list
+        self.storedSymbolListList = [[],[],[],[],[]] # one for every cell
+        canvasIdx = f"{self.CC}"[-1]
+        canvasIdx = 1 if canvasIdx == 's' else int(canvasIdx)
         if '=' in sympyList:
             equalsIdx = sympyList.index('=')
             if equalsIdx == len(sympyList)-1: # nothing on right, we must solve 
@@ -332,10 +336,17 @@ class Paint(object):
                 latex_str = '$' + latexLeft + '=' + latexRight + '$'
                 self.convert_latex(input=latex_str)
             else: 
-                latexLeft = list_to_sympy(sympyList[0:equalsIdx])
-                latexRight = list_to_sympy(sympyList[equalsIdx+1:len(sympyList)])
-                latex_str = '$' + latexLeft + '=' + latexRight + '$'
-                self.convert_latex(input=latex_str)
+                if equalsIdx == 1: # left side is single variable
+                    self.storedSymbolListList[canvasIdx-1].append(sympyList[0])
+                    latexLeft = list_to_sympy(sympyList[0:equalsIdx])
+                    latexRight = list_to_sympy(sympyList[equalsIdx+1:len(sympyList)])
+                    latex_str = '$' + latexLeft + '=' + latexRight + '$'
+                    self.convert_latex(input=latex_str)
+                else: 
+                    latexLeft = list_to_sympy(sympyList[0:equalsIdx])
+                    latexRight = list_to_sympy(sympyList[equalsIdx+1:len(sympyList)])
+                    latex_str = '$' + latexLeft + '=' + latexRight + '$'
+                    self.convert_latex(input=latex_str)
         else:
             latex_str = '$' + list_to_sympy(sympyList) + '$'
             self.convert_latex(input=latex_str) # RENDERS LATEX
@@ -368,7 +379,7 @@ class Paint(object):
         self.labelList.append(label)
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_25(), model_folder='NEW_save_states/CNNmodel25Epoch15.pt', transform=transform)
+    paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
 
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j

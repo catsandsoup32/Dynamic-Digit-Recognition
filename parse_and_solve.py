@@ -11,4 +11,4 @@ def solver(latex):
     sympy_expr = parse_latex(latex)
     return str(sympy_expr.evalf(3))
 
-#print(solver('\sin(3.14158)'))
+print(solver('\sin(3.14158)'))

@@ -66,7 +66,6 @@ def squareBB(input_image):
     # combines i's, j's, etc. and also crops dots
     for dotIdx in dotList:
         x, y, s = squareList[dotIdx][0], squareList[dotIdx][1], squareList[dotIdx][2]
-        trueDot = True
         for squares in squareList:
             if squares[3] != dotIdx and abs(squares[0] + squares[2]//2 - x) < x_margin and squares[3] != None:
                 x0, y0, s0 = squares[0], squares[1], squares[2]
@@ -75,14 +74,7 @@ def squareBB(input_image):
                 squares[0] = x0 - d//2
                 squares[1] = y0 - d
                 squareList[dotIdx][3] = None
-                trueDot = False
                 break
-            
-        #if trueDot:
-            #centerX = x + s//2
-            #centerY = y - s//2
-            #squareList[dotIdx][0], squareList[dotIdx][1], squareList[dotIdx][2] = centerX-5, centerY+5, 10
- 
 
     finalSquareList = []
     xCoordList = []
@@ -101,12 +93,7 @@ def squareBB(input_image):
             
     xCoordList.sort()
     sortedFinalSquareList = []
-    insertIdx = 0
-
-    '''
-    # APPEND A 'NUM' or 'DEN' term  
-    # only check minuses that are near center to allow for other minuses in num / denom
-    centerLine = largestSquare[1] + largestSquare[2]//2 # top + side/2
+    insertIdx = 0    
 
     hLineCompleteList = []
     for hLineIdx in hLineList:
@@ -114,24 +101,25 @@ def squareBB(input_image):
             if hLineIdx == squares[3]:
                 hLineCompleteList.append((squares[0], squares[1], squares[2], squares[3])) 
 
-    print(f"HlinewithY: {hLineCompleteList}")
+    centerLine = largestSquare[1] + largestSquare[2]//2 # top + side/2
 
     for idx, squares in enumerate(finalSquareList):
         for hTuple in hLineCompleteList:
-            if squares[3] != hTuple[3]: # a horizontal line won't check itself
-                centerX = squares[0] + squares[2]//2
-                centerY = squares[1] + squares[2]//2
-                if centerX >= hTuple[0] and centerX < hTuple[0] + hTuple[2] and centerY >= hTuple[1] and centerY <= hTuple[1] + hTuple[2]: 
-                 # if the center of the symbol is within minus bb
-                    hCenter = hTuple[1] + hTuple[2]//2
-                    if centerY < hCenter: # above
-                        finalSquareList[idx].append('num')
-                        print(hTuple[3])
-                    elif centerY > hCenter:
-                        finalSquareList[idx].append('den')
+            hLineCenter = hTuple[1] + hTuple[2]//2
+            if abs(centerLine - hLineCenter) < 30: # only check near center to allow for other minuses in num / denom
+                if squares[3] != hTuple[3]: # a horizontal line won't check itself
+                    centerX = squares[0] + squares[2]//2
+                    centerY = squares[1] + squares[2]//2
+                    if centerX >= hTuple[0] and centerX < hTuple[0] + hTuple[2] and centerY >= hTuple[1] and centerY <= hTuple[1] + hTuple[2]: 
+                    # if the center of the symbol is within minus bb
+                        hCenter = hTuple[1] + hTuple[2]//2
+                        if centerY < hCenter: # above
+                            finalSquareList[idx].append('num')
+                        elif centerY > hCenter:
+                            finalSquareList[idx].append('den')
     
-    print(finalSquareList)
-    '''
+
+    print(f"finalSquareList: {finalSquareList}")
 
     while insertIdx < len(finalSquareList):
         for squares in finalSquareList:
@@ -149,7 +137,7 @@ def squareBB(input_image):
     #print(sortedFinalSquareList)
     return (sortedFinalSquareList, largestSquare)
  
-#squareBB('equals_test.png')
+#squareBB('divisionTest.jpg')
 
 
 
