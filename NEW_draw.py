@@ -159,6 +159,14 @@ class Paint(object):
             self.objects.append(obj_id)  # Store the object's ID for undo
         self.old_x = event.x
         self.old_y = event.y
+    
+    def copy_to_clipboard(self,string):
+        # Clear the clipboard
+        self.root.clipboard_clear()
+        # Append new text to the clipboard
+        self.root.clipboard_append(string)
+        # Optional: Show a message or feedback to the user
+        print("Text copied to clipboard!")
 
     def reset(self, event):
         self.old_x, self.old_y = None, None
@@ -355,6 +363,8 @@ class Paint(object):
                 self.solvedLabel(label_text=latexRight, x=self.equalsX + self.equalsS + 20, y=self.equalsY - 70)
                 latex_str = '$' + latexLeft + '=' + latexRight + '$'
                 self.convert_latex(input=latex_str)
+                self.copy_to_clipboard(string=latex_str)
+
             else: 
                 if equalsIdx == 1: # left side is single variable
                     latexLeft = list_to_sympy(sympyList[0:equalsIdx])
@@ -363,15 +373,19 @@ class Paint(object):
                     print(f"storedSymbolDict: {self.storedSymbolDict}")
                     latex_str = '$' + latexLeft + '=' + latexRight + '$'
                     self.convert_latex(input=latex_str)
+                    self.copy_to_clipboard(string=latex_str)
+
                 else: 
                     latexLeft = list_to_sympy(sympyList[0:equalsIdx])
                     latexRight = list_to_sympy(sympyList[equalsIdx+1:len(sympyList)])
                     latex_str = '$' + latexLeft + '=' + latexRight + '$'
                     self.convert_latex(input=latex_str)
+                    self.copy_to_clipboard(string=latex_str)
         else:
             latex_str = '$' + list_to_sympy(sympyList) + '$'
             self.convert_latex(input=latex_str) # RENDERS LATEX
-    
+            self.copy_to_clipboard(string=latex_str)
+
     def convert_latex(self, input): # *render latex
         print(f"latex string: {input}")
         fig = Figure(figsize=(5, 5))
@@ -400,7 +414,7 @@ class Paint(object):
         self.labelList.append(label)
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_28(), model_folder='NEW_save_states/CNNmodel28Epoch15.pt', transform=transform_norm)
+    paint_app = Paint(model=CNN_28(), model_folder='NEW_save_states/CNNmodel28Epoch20.pt', transform=transform_norm)
 
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j
@@ -422,7 +436,8 @@ if __name__ == '__main__':
 # 26 doesnt work
 # 27 doesnt work
 
-
+# Model 28 E 20 BEST good, can try other epochs too, 40 but messes up sometimes
+# Try 25, 30, 35 in lab
 
 
 

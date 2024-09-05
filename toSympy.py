@@ -130,9 +130,9 @@ def list_to_sympy(lst):
                         lowerBound = lst[idx+1][1] if isinstance(lst[idx+1], tuple) else lst[idx+1]
                         upperBound = lst[idx+2][1] if isinstance(lst[idx+2], tuple) else lst[idx+2]
                         expression += '\\'+itm+rf'_{{{lowerBound}}}^{{{upperBound}}}'
-                        intStartIdx = idx + 3
+                        intStartIdx = idx + 3 
                     else:
-                        intStartIdx = idx + 1
+                        intStartIdx = idx + 1 
                         expression += '\\'+itm
 
                     for dIdx, dItm in enumerate(lst[idx+1:len(lst)]):
@@ -143,8 +143,8 @@ def list_to_sympy(lst):
                     expression += list_to_sympy(lst[intStartIdx:intStopIdx-1]) + f'\\,d' 
                     restartIdx = intStopIdx-1
 
-                elif itm == 'sigma':
-                    pass
+                elif itm == 'sigma' or itm == 'theta' or itm == 'phi' or itm == 'beta' or itm == 'alpha' or itm == 'delta' or itm == 'gamma' or itm == 'lambda':
+                    expression += '\\' + itm
 
                 elif itm == 'log':
                     expression += '\\' + itm
