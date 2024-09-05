@@ -6,7 +6,7 @@ from sympy import pi
 from sympy import Float
 import re
 
-test1 = r"\frac{1}{2} + 5^{2}"
+test1 = r"\log(\e)"
 
 # Convert LaTeX to SymPy
 def solver(latex, varDict):
@@ -22,7 +22,8 @@ def solver(latex, varDict):
     num_eval = sympy_expr.evalf(3)
     if isinstance(num_eval, Float): # float
         print('float')
-        return str(int(sympy_expr.evalf(3) * 1000)/1000) # rounds
+        return_print = str(int(sympy_expr.evalf(3) * 1000)/1000) # rounds
+        return return_print[:-2] if return_print[-2:len(return_print)] == '.0' else return_print
     else:
         print('symbols')
         return str(sympy_expr.evalf())

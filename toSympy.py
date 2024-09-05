@@ -33,6 +33,11 @@ testList14 = ['y', '(', '5', ')', 'forward_slash', '5']
 testList15 = ['sin', '(', 'pi',')']
 testList16 = ['infty']
 testList17 = ['int', '5', 'x','d','x']
+testList18 = ['log',('_','1'),('_','0'),'+','10']
+testList19 = ['log','10']
+testList20 = ['log', ('_', '1'), ('_', '0'), '1', '0', '0']
+
+
 
 # THIS CONVERTS TO LATEX. NOT EQUATION SOLVER
 def list_to_sympy(lst):
@@ -146,9 +151,22 @@ def list_to_sympy(lst):
                 elif itm == 'sigma' or itm == 'theta' or itm == 'phi' or itm == 'beta' or itm == 'alpha' or itm == 'delta' or itm == 'gamma' or itm == 'lambda':
                     expression += '\\' + itm
 
+                # testList20 = ['log', ('_', '1'), ('_', '0'), '1', '0', '0']
                 elif itm == 'log':
-                    expression += '\\' + itm
-                
+                    expression += '\\' + itm 
+                    base = True if isinstance(lst[idx+1], tuple) else False
+                    if base:
+                        expression += r'_{'
+                        for subIdx, subItm in enumerate(lst[idx+1:len(lst)]): 
+                            if isinstance(subItm, tuple):
+                                expression += subItm[1] 
+                            else:
+                                expression += r'}'
+                                restartIdx = subIdx 
+                                break
+                    else: 
+                        expression += r'_{' + '\\' + r'e}'
+
                 elif itm == 'pi':
                     expression += '\\' + itm
                 elif itm == 'sin' or itm == 'tan' or itm == 'cos': 
@@ -192,7 +210,7 @@ def list_to_sympy(lst):
                 if idx == len(lst)-1: # END CASE 
                     return expression
 
-#print(list_to_sympy(testList17))
+#print(list_to_sympy(testList20))
 
 # For log, int, sigma, tan, sin, cos needs special expression
 # Need to eval variables and also differentiate from E 

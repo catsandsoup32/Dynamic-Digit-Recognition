@@ -254,7 +254,7 @@ class Paint(object):
                         bb_ss_list.append([bb_ss, '_', side])
                     else: 
                         bb_ss_list.append([bb_ss, side])
-                        if abs(side - self.largestSquare[2]) < 30:
+                        if abs(side - self.largestSquare[2]) < 50: # fix for exponents
                             print(f"Error? If this side value ({side}) belongs to an operation")
                             pastY_normal = y
                             pastS_normal = side
@@ -264,7 +264,7 @@ class Paint(object):
                         pastY_normal = y
                         pastS_normal = side
                     else:
-                        if abs(side - self.largestSquare[2]) < 30: # fixes nums after operations being subscripted
+                        if abs(side - self.largestSquare[2]) < 50: # fixes nums after operations being subscripted
                             print(f"Error? If this side value ({side}) belongs to an operation")    
                             pastY_normal = y
                             pastS_normal = side
@@ -436,11 +436,9 @@ if __name__ == '__main__':
 # 26 doesnt work
 # 27 doesnt work
 
-# Model 28 E 20 BEST good, can try other epochs too, 40 but messes up sometimes
-# Try 25, 30, 35 in lab
+# Model 28 E 20 BEST good, can try other epochs too, 40 but messes up sometimes (no trig)
+# Try 25, 30, 35 in lab 
 
+# Model 29 55 is better than 30
 
-
-
-
-
+# Model 52 doesnt get d's
