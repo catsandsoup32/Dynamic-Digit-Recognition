@@ -23,6 +23,12 @@ from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_23, CNN_24, CNN_26
 # transform and init data
 from NEW_dataloader import MathSymbolDataset
 
+transform_norm = transform = transforms.Compose([
+    transforms.Grayscale(num_output_channels=1),
+    transforms.ToTensor(),
+    transforms.Normalize(mean=(0.9505,), std=(0.1989,)) # subtract 0.5 and then divide 0.5 (z-score)
+])
+
 transform = transforms.Compose([
     transforms.Grayscale(num_output_channels=1),
     transforms.ToTensor(),
