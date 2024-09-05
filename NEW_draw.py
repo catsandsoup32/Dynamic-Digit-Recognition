@@ -240,18 +240,18 @@ class Paint(object):
                     bb_ss = sct.grab(bb_window)                
 
                 if idx > 0: # doesn't activate on first loop
-                    if centerY < int(0.9 * pastY_normal): # 0.8 has bugs
-                        bb_ss_list.append((bb_ss, '^'))
+                    if centerY < int(0.85 * pastY_normal): # 0.8 has bugs
+                        bb_ss_list.append([bb_ss, '^', side])
                     elif centerY > int(0.9 * (pastY_normal + pastS_normal)):
-                        bb_ss_list.append((bb_ss, '_'))
+                        bb_ss_list.append([bb_ss, '_', side])
                     else: 
-                        bb_ss_list.append([bb_ss])
+                        bb_ss_list.append([bb_ss, side])
                         if abs(side - self.largestSquare[2]) < 30:
                             print(f"Error? If this side value ({side}) belongs to an operation")
                             pastY_normal = y
                             pastS_normal = side
                 else:
-                    bb_ss_list.append([bb_ss])
+                    bb_ss_list.append([bb_ss, side])
                     if idx == 0: # bug fix
                         pastY_normal = y
                         pastS_normal = side
@@ -274,11 +274,24 @@ class Paint(object):
         self.run_inference(symList=bb_ss_list, labelPosList=labelPosList)
 
     def run_inference(self, symList, labelPosList):
-
         sympyList = []
+        ls = self.largestSquare[2]
         for idx, syms in enumerate(symList): # these are mss screenshots
-            pil_image = Image.fromarray(np.array(syms[0]))
-            ss_img = pil_image.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
+            image_array = np.array(syms[0])
+            if syms[-1] <= 60: # hard code this first
+                thickness_factor = 3  
+            elif syms[-1] <= 125:
+                thickness_factor = 2
+            else: 
+                thickness_factor = None # bugs at 1
+            syms.pop(-1) # get rid of side
+            if thickness_factor is not None:
+                kernel = np.ones((thickness_factor, thickness_factor), np.uint8)
+                augmented_img_array = cv2.dilate(image_array, kernel, iterations=1)
+                pil_image = Image.fromarray(augmented_img_array)
+                ss_img = pil_image.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
+            else:
+                ss_img = Image.fromarray(np.array(syms[0])).resize((45,45))
             '''
             ss_img = ss_img.convert("RGB") # this will white out strips for numbers close together, prob not needed
             strip_width = 5 
@@ -349,7 +362,7 @@ class Paint(object):
             if equalsIdx == len(sympyList)-1: # nothing on right, we must solve 
                 latexLeft = list_to_sympy(sympyList[0:equalsIdx])
                 latexRight = solver(latexLeft, self.storedSymbolDict)
-                self.solvedLabel(label_text=latexRight, x=self.equalsX + self.equalsS + 10, y=self.largestSquare[1] - self.equalsS//2)
+                self.solvedLabel(label_text=latexRight, x=self.equalsX + self.equalsS + 20, y=self.equalsY - 70)
                 latex_str = '$' + latexLeft + '=' + latexRight + '$'
                 self.convert_latex(input=latex_str)
             else: 
@@ -397,7 +410,7 @@ class Paint(object):
         self.labelList.append(label)
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_50(), model_folder='NEW_save_states/CNNmodel50Epoch20.pt', transform=transform_norm)
+    paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
 
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j

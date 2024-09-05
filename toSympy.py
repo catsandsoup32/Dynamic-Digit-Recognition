@@ -73,7 +73,7 @@ def list_to_sympy(lst):
                             if lst[i] == '(' and lst[i-1] != '(':
                                 divideStartIdx = i+1
                                 break 
-                        dividePrevStr = list_to_sympy(lst[divideStartIdx:idx-1])
+                        dividePrevStr = list_to_sympy(lst[divideStartIdx:idx])
                     else: 
                         for i in range(idx-1,-1, -1):
                             if i == 0:
@@ -109,9 +109,9 @@ def list_to_sympy(lst):
                         expression = ''
                     else:
                         if divideEnclosedStart:
-                            expression = expression[:divideStartIdx-1]
+                            expression = expression[:divideStartIdx]
                         else:
-                            expression = expression[:divideStartIdx+1]
+                            expression = expression[:divideStartIdx]
                     
                     print(dividePrevStr, dividePostStr)
                     expression = expression + rf"\frac{{{dividePrevStr}}}{{{dividePostStr}}}"
@@ -173,6 +173,8 @@ def list_to_sympy(lst):
                     expression += itm
                 elif itm == 'dot':
                     expression += '\cdot'
+                elif itm == 'e':
+                    expression += '\\' + itm
                 elif itm.isdigit() or itm.isalpha(): 
                     expression += itm
                     '''
