@@ -13,20 +13,10 @@ def solver(latex, varDict):
     if varDict is not None:
         for key, value in varDict.items():
             if key in latex:
-                matches = list(re.finditer(rf"(?<!\w)({re.escape(key)})", latex))
-                for match in matches: # Get the starting index of each match
-                    start_index = match.start()
-                    # Check the character before the match
-                    if start_index > 0 and latex[start_index - 1].isdigit():
-                        print(f"Key: at index {start_index} is preceded by a numerical value")
-                        latex = latex.replace(key, r'\cdot' + list_to_sympy(value))
-                    else:
-                        latex = latex.replace(key, list_to_sympy(value))    
-                        
+                latex = latex.replace(key, list_to_sympy(value))    
 
     latex = latex.replace(r'\pi', '3.1415926') if r'\pi' in latex else latex
     latex = latex.replace(r'\e', '2.7182818') if r'\e' in latex else latex
-
 
     sympy_expr = parse_latex(latex) # built in function
     num_eval = sympy_expr.evalf(3)
@@ -36,6 +26,5 @@ def solver(latex, varDict):
     else:
         print('symbols')
         return str(sympy_expr.evalf())
-
 
 

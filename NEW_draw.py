@@ -397,7 +397,7 @@ class Paint(object):
         self.tk_image = ImageTk.PhotoImage(image)
 
         # Display the image on the Tkinter canvas
-        self.CC.create_image(150, 150, image=self.tk_image)
+        self.CC.create_image(300, 150, image=self.tk_image)
         
     def createLabel(self, label_text, x, y, size):
         label = Label(self.CC, text = label_text, font=("Courier", max(size, 100)//10))
