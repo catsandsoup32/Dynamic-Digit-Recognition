@@ -26,7 +26,7 @@ import torch.nn as nn
 import torchvision.transforms.functional as TF
 
 from NEW_train import transform, transform_norm
-from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_24, CNN_26, CNN_50
+from NEW_models import CNN_9, CNN_16, CNN_19, CNN_22, CNN_24, CNN_26, CNN_50, CNN_28
 from NEW_dataloader import class_Labels_Length
 
 
@@ -284,6 +284,7 @@ class Paint(object):
                 thickness_factor = 2
             else: 
                 thickness_factor = None # bugs at 1
+            thickness_factor = None # use this to test normally
             syms.pop(-1) # get rid of side
             if thickness_factor is not None:
                 kernel = np.ones((thickness_factor, thickness_factor), np.uint8)
@@ -292,18 +293,7 @@ class Paint(object):
                 ss_img = pil_image.resize((45,45)) # NEVER INVERT THIS, trained on B-on-W data
             else:
                 ss_img = Image.fromarray(np.array(syms[0])).resize((45,45))
-            '''
-            ss_img = ss_img.convert("RGB") # this will white out strips for numbers close together, prob not needed
-            strip_width = 5 
-            width, height = ss_img.size
-            for x in range(strip_width):
-                for y in range(height):
-                    ss_img.putpixel((x, y), (255, 255, 255))  
-            for x in range(width - strip_width, width):
-                for y in range(height):
-                    ss_img.putpixel((x, y), (255, 255, 255))  
-            ss_img.show()
-            '''
+            
             input_tensor = self.transform(ss_img)
 
             if isinstance(input_tensor, torch.Tensor):   
@@ -410,7 +400,7 @@ class Paint(object):
         self.labelList.append(label)
 
 if __name__ == '__main__':
-    paint_app = Paint(model=CNN_9(), model_folder='NEW_save_states/CNNmodel21Epoch15.pt', transform=transform)
+    paint_app = Paint(model=CNN_28(), model_folder='NEW_save_states/CNNmodel28Epoch15.pt', transform=transform_norm)
 
 
 # exp 19 30 is actually pretty good, NO log, YES dot, yes i and j
