@@ -441,4 +441,8 @@ if __name__ == '__main__':
 
 # Model 29 55 is better than 30
 
-# Model 52 doesnt get d's
+
+# FINAL (both need pretty big dots)
+# CNN_28 with M28_E20 (doesn't get 4)
+# CNN_50 with M52_E20 
+# 

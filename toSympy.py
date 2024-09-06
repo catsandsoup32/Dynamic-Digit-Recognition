@@ -48,7 +48,10 @@ def list_to_sympy(lst):
         if idx > restartIdx:
             if isinstance(itm, tuple): # exponent or subscript Or decimal
 
-                if not modifying and lst[idx-1] != 'log': # if modifying is False
+                if itm[1] == 'dot':
+                    expression += '.'
+
+                elif not modifying and lst[idx-1] != 'log': # if modifying is False
                     modifier = itm[0]
                     next_items = ""
 
